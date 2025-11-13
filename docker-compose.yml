@@ -1,0 +1,52 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: crypto-exchange-postgres
+    environment:
+      POSTGRES_DB: crypto_exchange
+      POSTGRES_USER: crypto_user
+      POSTGRES_PASSWORD: your_secure_password
+    ports:
+      - "5435:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - crypto-network
+
+  redis:
+    image: redis:7-alpine
+    container_name: crypto-exchange-redis
+    command: redis-server --appendonly yes --requirepass your_strong_password_here
+    ports:
+      - "6372:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - crypto-network
+
+  flask-app:
+    build: .
+    container_name: crypto-exchange-flask
+    ports:
+      - "5003:5000"
+    environment:
+      - DATABASE_URL=postgresql://crypto_user:your_secure_password@postgres:5432/crypto_exchange
+      - REDIS_URL=redis://:your_strong_password_here@redis:6379
+    depends_on:
+      - postgres
+      - redis
+    networks:
+      - crypto-network
+    volumes:
+      - .:/app
+    command: python app.py
+
+volumes:
+  postgres_data:
+  redis_data:
+
+networks:
+  crypto-network:
+    driver: bridge
