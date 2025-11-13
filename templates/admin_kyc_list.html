@@ -1,0 +1,347 @@
+{% extends "base.html" %}
+
+{% block content %}
+<style>
+  :root {
+    --primary-color: #2563eb;
+    --secondary-color: #1e40af;
+    --success-color: #059669;
+    --danger-color: #e05353;
+    --background-color: rgba(255, 255, 255, 0.2);
+    --card-background: #ffffff;
+  }
+
+  .kyc-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 2rem;
+    background-color: var(--background-color);
+    min-height: 100vh;
+  }
+
+  .kyc-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 2rem;
+    padding: 1rem;
+    background: #1e293b;
+    border-radius: 1rem;
+    box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+  }
+
+  .kyc-card {
+    background: #1e293b;
+    border-radius: 1rem;
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+    box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+    transition: transform 0.2s;
+  }
+
+  .kyc-card:hover {
+    transform: translateY(-2px);
+  }
+
+  .image-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 1rem;
+    margin: 1rem 0;
+  }
+
+  .document-thumbnail {
+    width: 250px;
+    height: 250px;
+    object-fit: cover;
+    border-radius: 0.5rem;
+    cursor: pointer;
+    transition: transform 0.2s;
+  }
+
+  .document-thumbnail:hover {
+    transform: scale(1.05);
+  }
+
+  .modal {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.85);
+    display: none;
+    place-items: center;
+    z-index: 1000;
+  }
+
+  .modal-content {
+      background: #1f2937;
+      border-radius: 1rem;
+      padding: 2rem;
+      max-width: 90vw;
+      max-height: 90vh;
+      position: relative;
+      animation: modalFade 0.3s ease-out;
+    }
+
+    .modal-content .close-button {
+    position: absolute;
+    top: 1rem;
+    right: 1rem;
+    background-color: var(--danger-color);
+    color: white;
+    border: none;
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    display: grid;
+    place-items: center;
+    cursor: pointer;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    transition: background-color 0.3s, transform 0.2s;
+  }
+
+  .modal-content .close-button:hover {
+    background-color: #e05353; /* Darker red */
+    transform: scale(1.1);
+  }
+
+  @keyframes modalFade {
+    from { opacity: 0; transform: scale(0.95); }
+    to { opacity: 1; transform: scale(1); }
+  }
+
+  .modal-image {
+    max-width: 100%;
+    max-height: 70vh;
+    object-fit: contain;
+    border-radius: 0.5rem;
+  }
+
+  .action-buttons {
+    display: flex;
+    gap: 1rem;
+    margin-top: 1rem;
+  }
+
+  .btn {
+    padding: 0.5rem 1rem;
+    border-radius: 0.5rem;
+    font-weight: 500;
+    transition: all 0.2s;
+    border: none;
+    cursor: pointer;
+    color: white;
+  }
+
+  .btn-primary {
+    background: var(--primary-color);
+  }
+
+  .btn-primary:hover {
+    background: var(--secondary-color);
+  }
+
+  .btn-success {
+    background: var(--success-color);
+  }
+
+  .btn-danger {
+    background: var(--danger-color);
+  }
+
+  .user-info {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1rem;
+    margin-bottom: 1rem;
+  }
+
+  .status-badge {
+    padding: 0.25rem 0.75rem;
+    border-radius: 1rem;
+    font-size: 0.875rem;
+    font-weight: 500;
+  }
+
+  .navigation-button {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    display: grid;
+    place-items: center;
+    cursor: pointer;
+    transition: background 0.2s;
+  }
+
+  .navigation-button:hover {
+    background: rgba(255, 255, 255, 0.2);
+  }
+</style>
+
+<div class="kyc-container">
+  <div class="kyc-header">
+    <h1 class="text-2xl font-bold">KYC Verification Dashboard</h1>
+    <div class="status-badge" style="background: var(--primary-color)">
+      {{ kyc_requests|length }} Pending Requests
+    </div>
+  </div>
+
+  <div id="kycRequests">
+    {% for kyc in kyc_requests %}
+    <div class="kyc-card" data-kyc-id="{{ kyc.id }}">
+      <div class="user-info">
+        <div>
+          <h3 class="text-xl font-semibold" style="font-size: 30px">{{ kyc.user.full_name }}</h3>
+          <p><strong>Email:</strong> {{ kyc.user.email  }}</p>
+        </div>
+        <div>
+          <p><strong>Country:</strong> {{ kyc.country }}</p>
+          <p><strong>ID Type:</strong> {{ kyc.id_type }}</p>
+          <p><strong>Submitted:</strong> {{ kyc.submitted_at.strftime('%Y-%m-%d %H:%M:%S') }}</p>
+        </div>
+      </div>
+
+      <div class="image-grid">
+        <img
+          src="{{ url_for('serve_upload', filename=kyc.id_front_path) }}"
+          alt="ID Front"
+          class="document-thumbnail"
+          onclick="viewImages('{{ kyc.id }}', 0)"
+        >
+        <img
+          src="{{ url_for('serve_upload', filename=kyc.id_back_path) }}"
+          alt="ID Back"
+          class="document-thumbnail"
+          onclick="viewImages('{{ kyc.id }}', 1)"
+        >
+        <img
+          src="{{ url_for('serve_upload', filename=kyc.selfie_path) }}"
+          alt="Selfie"
+          class="document-thumbnail"
+          onclick="viewImages('{{ kyc.id }}', 2)"
+        >
+      </div>
+
+      <form action="{{ url_for('verify_kyc', kyc_id=kyc.id) }}" method="POST" class="action-buttons">
+        <button type="submit" name="action" value="approve" class="btn btn-success">
+          Approve Request
+        </button>
+        <button type="submit" name="action" value="reject" class="btn btn-danger">
+          Reject Request
+        </button>
+      </form>
+    </div>
+    {% endfor %}
+
+    {% if not kyc_requests %}
+    <div class="text-center py-8 text-gray-400">
+      No pending KYC requests at this time
+    </div>
+    {% endif %}
+  </div>
+</div>
+
+<div id="imageModal" class="modal">
+  <div class="modal-content">
+  <button onclick="closeModal()" class="close-button">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <path d="M18 6L6 18M6 6l12 12"/>
+    </svg>
+  </button>
+
+    <img id="modalImage" class="modal-image" src="" alt="">
+
+    <button onclick="previousImage()" class="navigation-button" style="left: 1rem;">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M15 18l-6-6 6-6"/>
+      </svg>
+    </button>
+
+    <button onclick="nextImage()" class="navigation-button" style="right: 1rem;">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M9 18l6-6-6-6"/>
+      </svg>
+    </button>
+
+    <div id="imageIndicators" class="flex justify-center gap-4 mt-4"></div>
+  </div>
+</div>
+
+<script>
+const modal = document.getElementById('imageModal');
+let currentKycId = null;
+let currentImageIndex = 0;
+
+function getImagesForKyc(kycId) {
+  const card = document.querySelector(`[data-kyc-id="${kycId}"]`);
+  return Array.from(card.querySelectorAll('.document-thumbnail')).map(img => ({
+    src: img.src,
+    label: img.alt
+  }));
+}
+
+function viewImages(kycId, index) {
+  currentKycId = kycId;
+  currentImageIndex = index;
+  const images = getImagesForKyc(kycId);
+  updateModalImage(images[index]);
+  modal.style.display = 'grid';
+  updateImageIndicators(images);
+}
+
+function closeModal() {
+  modal.style.display = 'none';
+}
+
+function updateModalImage(image) {
+  const modalImage = document.getElementById('modalImage');
+  modalImage.src = image.src;
+  modalImage.alt = image.label;
+}
+
+function updateImageIndicators(images) {
+  const container = document.getElementById('imageIndicators');
+  container.innerHTML = images.map((img, index) => `
+    <button
+      onclick="viewImages('${currentKycId}', ${index})"
+      class="btn ${index === currentImageIndex ? 'btn-primary' : 'btn-secondary'}"
+    >
+      ${img.label}
+    </button>
+  `).join('');
+}
+
+function nextImage() {
+  const images = getImagesForKyc(currentKycId);
+  currentImageIndex = (currentImageIndex + 1) % images.length;
+  viewImages(currentKycId, currentImageIndex);
+}
+
+function previousImage() {
+  const images = getImagesForKyc(currentKycId);
+  currentImageIndex = (currentImageIndex - 1 + images.length) % images.length;
+  viewImages(currentKycId, currentImageIndex);
+}
+
+modal.addEventListener('click', function(e) {
+  if (e.target === modal) {
+    closeModal();
+  }
+});
+
+document.addEventListener('keydown', function(e) {
+  if (modal.style.display === 'grid') {
+    if (e.key === 'ArrowRight') {
+      nextImage();
+    } else if (e.key === 'ArrowLeft') {
+      previousImage();
+    } else if (e.key === 'Escape') {
+      closeModal();
+    }
+  }
+});
+</script>
+{% endblock %}

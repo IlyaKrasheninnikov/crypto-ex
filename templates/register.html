@@ -1,0 +1,401 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="auth-container">
+    <div class="card auth-card">
+        <div class="auth-header">
+            <h2>Create Account</h2>
+            <p>Join NexusCrypt and start trading!</p>
+        </div>
+
+        <form method="POST" class="auth-form" id="registerForm">
+            <div class="form-group">
+                <label for="email">Email Address</label>
+                <input
+                    type="email"
+                    id="email"
+                    name="email"
+                    class="input"
+                    required
+                    autocomplete="email">
+            </div>
+
+            <div class="form-group">
+                <label for="username">Username</label>
+                <input
+                    type="text"
+                    id="username"
+                    name="username"
+                    class="input"
+                    required
+                    autocomplete="username"
+                    minlength="3"
+                    maxlength="30"
+                    pattern="[a-zA-Z0-9_]+">
+                <small class="input-help">Username must be 3-30 characters (letters, numbers, underscore only)</small>
+                <small class="input-error" id="username-error"></small>
+            </div>
+
+            <div class="form-group">
+                <label for="password">Password</label>
+                <input
+                    type="password"
+                    id="password"
+                    name="password"
+                    class="input"
+                    required
+                    autocomplete="new-password"
+                    minlength="8">
+                <small class="input-help">Password must be at least 8 characters long</small>
+                <small class="input-error" id="password-error"></small>
+            </div>
+
+            <div class="form-group">
+                <label for="confirm-password">Confirm Password</label>
+                <input
+                    type="password"
+                    id="confirm-password"
+                    name="confirm_password"
+                    class="input"
+                    required
+                    autocomplete="new-password">
+                <small class="input-error" id="confirm-password-error"></small>
+            </div>
+
+            <div class="terms">
+                <label class="checkbox-label">
+                    <input type="checkbox" required name="terms">
+                    I agree to the <a href="#">Terms of Service</a> and <a href="#">Privacy Policy</a>
+                </label>
+            </div>
+
+            <button type="submit" class="btn auth-btn">Create Account</button>
+        </form>
+
+        <div class="auth-footer">
+            <p>Already have an account? <a href="{{ url_for('login') }}">Login</a></p>
+        </div>
+    </div>
+</div>
+
+<style>
+.auth-container {
+    max-width: 400px;
+    margin: 2rem auto;
+    padding: 0 1rem;
+}
+
+.auth-card {
+    background-color: var(--background-light);
+    border-radius: 0.5rem;
+    padding: 2rem;
+}
+
+.auth-header {
+    text-align: center;
+    margin-bottom: 2rem;
+}
+
+.auth-header h2 {
+    font-size: 1.5rem;
+    margin-bottom: 0.5rem;
+}
+
+.auth-header p {
+    color: var(--text-secondary);
+}
+
+.auth-form .form-group {
+    margin-bottom: 1.5rem;
+}
+
+.auth-form label {
+    display: block;
+    margin-bottom: 0.5rem;
+    color: var(--text-primary);
+}
+
+.auth-form .input {
+    width: 100%;
+    padding: 0.75rem;
+    background-color: var(--background-dark);
+    border: 1px solid var(--text-secondary);
+    border-radius: 0.375rem;
+    color: var(--text-primary);
+    transition: border-color 0.3s;
+}
+
+.auth-form .input:focus {
+    border-color: var(--primary-color);
+    outline: none;
+}
+
+.auth-form .input.error {
+    border-color: var(--danger-color);
+}
+
+.auth-form .input.success {
+    border-color: var(--success-color);
+}
+
+.input-help {
+    display: block;
+    margin-top: 0.25rem;
+    color: var(--text-secondary);
+    font-size: 0.875rem;
+}
+
+.input-error {
+    display: none;
+    margin-top: 0.25rem;
+    color: var(--danger-color);
+    font-size: 0.875rem;
+    font-weight: 500;
+}
+
+.input-error.show {
+    display: block;
+}
+
+.auth-options {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+}
+
+.remember-me {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.forgot-password {
+    color: var(--primary-color);
+    text-decoration: none;
+    font-size: 0.875rem;
+}
+
+.forgot-password:hover {
+    text-decoration: underline;
+}
+
+.auth-btn {
+    width: 100%;
+    padding: 0.75rem;
+    font-size: 1rem;
+    font-weight: 500;
+}
+
+.terms {
+    margin-bottom: 1.5rem;
+}
+
+.checkbox-label {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.5rem;
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+}
+
+.checkbox-label input[type="checkbox"] {
+    margin-top: 0.25rem;
+}
+
+.checkbox-label a {
+    color: var(--primary-color);
+    text-decoration: none;
+}
+
+.checkbox-label a:hover {
+    text-decoration: underline;
+}
+
+.auth-footer {
+    text-align: center;
+    margin-top: 1.5rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid var(--text-secondary);
+    color: var(--text-secondary);
+}
+
+.auth-footer a {
+    color: var(--primary-color);
+    text-decoration: none;
+}
+
+.auth-footer a:hover {
+    text-decoration: underline;
+}
+
+.spinner {
+    display: inline-block;
+    width: 14px;
+    height: 14px;
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    border-top-color: white;
+    border-radius: 50%;
+    animation: spin 0.6s linear infinite;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+</style>
+
+<script>
+// Real-time validation
+const usernameInput = document.getElementById('username');
+const passwordInput = document.getElementById('password');
+const confirmPasswordInput = document.getElementById('confirm-password');
+const usernameError = document.getElementById('username-error');
+const passwordError = document.getElementById('password-error');
+const confirmPasswordError = document.getElementById('confirm-password-error');
+
+// Username validation
+usernameInput.addEventListener('input', function() {
+    const value = this.value;
+    const regex = /^[a-zA-Z0-9_]+$/;
+
+    usernameError.classList.remove('show');
+    this.classList.remove('error', 'success');
+
+    if (value.length === 0) {
+        return;
+    }
+
+    if (!regex.test(value)) {
+        usernameError.textContent = 'Only letters, numbers and underscore allowed';
+        usernameError.classList.add('show');
+        this.classList.add('error');
+    } else if (value.length < 3) {
+        usernameError.textContent = 'Username must be at least 3 characters';
+        usernameError.classList.add('show');
+        this.classList.add('error');
+    } else if (value.length > 30) {
+        usernameError.textContent = 'Username must be less than 30 characters';
+        usernameError.classList.add('show');
+        this.classList.add('error');
+    } else {
+        this.classList.add('success');
+    }
+});
+
+// Password strength validation
+passwordInput.addEventListener('input', function() {
+    const value = this.value;
+
+    passwordError.classList.remove('show');
+    this.classList.remove('error', 'success');
+
+    if (value.length === 0) {
+        return;
+    }
+
+    if (value.length < 8) {
+        passwordError.textContent = 'Password must be at least 8 characters';
+        passwordError.classList.add('show');
+        this.classList.add('error');
+    } else if (!/[A-Z]/.test(value)) {
+        passwordError.textContent = 'Password must contain at least one uppercase letter';
+        passwordError.classList.add('show');
+        this.classList.add('error');
+    } else if (!/[0-9]/.test(value)) {
+        passwordError.textContent = 'Password must contain at least one number';
+        passwordError.classList.add('show');
+        this.classList.add('error');
+    } else {
+        this.classList.add('success');
+    }
+
+    // Re-validate confirm password if it has a value
+    if (confirmPasswordInput.value.length > 0) {
+        confirmPasswordInput.dispatchEvent(new Event('input'));
+    }
+});
+
+// Confirm password validation
+confirmPasswordInput.addEventListener('input', function() {
+    const value = this.value;
+    const passwordValue = passwordInput.value;
+
+    confirmPasswordError.classList.remove('show');
+    this.classList.remove('error', 'success');
+
+    if (value.length === 0) {
+        return;
+    }
+
+    if (value !== passwordValue) {
+        confirmPasswordError.textContent = 'Passwords do not match';
+        confirmPasswordError.classList.add('show');
+        this.classList.add('error');
+    } else {
+        this.classList.add('success');
+    }
+});
+
+// Form submission validation
+document.getElementById('registerForm').addEventListener('submit', function(e) {
+    const username = usernameInput.value;
+    const password = passwordInput.value;
+    const confirmPassword = confirmPasswordInput.value;
+
+    let hasError = false;
+
+    // Username validation
+    const usernameRegex = /^[a-zA-Z0-9_]+$/;
+    if (!usernameRegex.test(username)) {
+        e.preventDefault();
+        usernameError.textContent = 'Only letters, numbers and underscore allowed';
+        usernameError.classList.add('show');
+        usernameInput.classList.add('error');
+        hasError = true;
+    } else if (username.length < 3 || username.length > 30) {
+        e.preventDefault();
+        usernameError.textContent = 'Username must be between 3 and 30 characters';
+        usernameError.classList.add('show');
+        usernameInput.classList.add('error');
+        hasError = true;
+    }
+
+    // Password validation
+    if (password.length < 8) {
+        e.preventDefault();
+        passwordError.textContent = 'Password must be at least 8 characters';
+        passwordError.classList.add('show');
+        passwordInput.classList.add('error');
+        hasError = true;
+    } else if (!/[A-Z]/.test(password)) {
+        e.preventDefault();
+        passwordError.textContent = 'Password must contain at least one uppercase letter';
+        passwordError.classList.add('show');
+        passwordInput.classList.add('error');
+        hasError = true;
+    } else if (!/[0-9]/.test(password)) {
+        e.preventDefault();
+        passwordError.textContent = 'Password must contain at least one number';
+        passwordError.classList.add('show');
+        passwordInput.classList.add('error');
+        hasError = true;
+    }
+
+    // Confirm password validation
+    if (password !== confirmPassword) {
+        e.preventDefault();
+        confirmPasswordError.textContent = 'Passwords do not match';
+        confirmPasswordError.classList.add('show');
+        confirmPasswordInput.classList.add('error');
+        hasError = true;
+    }
+
+    // If validation passed, show loading state
+    if (!hasError) {
+        const btn = this.querySelector('button[type="submit"]');
+        btn.disabled = true;
+        btn.innerHTML = '<span class="spinner"></span> Registering...';
+    }
+});
+</script>
+
+{% endblock %}

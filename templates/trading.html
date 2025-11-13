@@ -1,0 +1,1653 @@
+{% extends "base.html" %}
+
+{% block content %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Advanced Trading - NexusCrypt Exchange</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+    <style>
+        :root {
+            --secondary-color: #764ba2;
+            --success-color: #10b981;
+            --danger-color: #ef4444;
+            --warning-color: #f59e0b;
+            --dark-bg: #1a1d29;
+            --card-bg: #252831;
+            --border-color: #2d3748;
+            --text-primary: #ffffff;
+            --text-secondary: #a0aec0;
+        }
+
+        body {
+            background: var(--dark-bg);
+            color: var(--text-primary);
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 0;
+        }
+
+        .trading-container {
+            display: grid;
+            grid-template-columns: 300px 1fr 350px;
+            grid-template-rows: 70px 1fr;
+            height: 100vh;
+            gap: 1px;
+            background: var(--border-color);
+        }
+
+        .trading-header {
+            grid-column: 1 / -1;
+            background: var(--card-bg);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 20px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            font-size: 1.5rem;
+            font-weight: bold;
+            text-decoration: none;
+            color: var(--text-primary);
+        }
+
+        .trading-pair-selector {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .pair-dropdown {
+            background: var(--dark-bg);
+            border: 1px solid var(--border-color);
+            color: var(--text-primary);
+            padding: 8px 15px;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+        }
+
+        .price-display {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .current-price {
+            font-size: 24px;
+            font-weight: bold;
+            color: var(--success-color);
+        }
+
+        .price-change {
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        .price-change.positive {
+            background: rgba(16, 185, 129, 0.2);
+            color: var(--success-color);
+        }
+
+        .price-change.negative {
+            background: rgba(239, 68, 68, 0.2);
+            color: var(--danger-color);
+        }
+
+        .user-controls {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .network-badge {
+            background: var(--primary-color);
+            color: white;
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+
+        .wallet-balance {
+            font-size: 14px;
+            color: var(--text-secondary);
+        }
+
+        .sidebar {
+            background: var(--card-bg);
+            padding: 20px;
+            overflow-y: auto;
+        }
+
+        .main-trading {
+            background: var(--card-bg);
+            display: grid;
+            grid-template-rows: 45% 55%;
+            gap: 1px;
+        }
+
+        .chart-section {
+            background: var(--card-bg);
+            padding: 20px;
+            position: relative;
+        }
+
+        .orderbook-trades {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1px;
+        }
+
+        .orderbook-section, .trades-section {
+            background: var(--card-bg);
+            padding: 15px;
+        }
+
+        .right-panel {
+            background: var(--card-bg);
+            display: grid;
+            grid-template-rows: auto 1fr auto;
+            gap: 1px;
+        }
+
+        .order-form {
+            background: var(--card-bg);
+            padding: 20px;
+            position: relative;
+        }
+
+        .kyc-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(37, 40, 49, 0.95);
+            backdrop-filter: blur(5px);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 10;
+            border-radius: 8px;
+        }
+
+        .kyc-overlay-content {
+            text-align: center;
+            padding: 30px;
+            max-width: 300px;
+        }
+
+        .kyc-overlay-content i {
+            font-size: 48px;
+            color: var(--warning-color);
+            margin-bottom: 20px;
+        }
+
+        .kyc-overlay-content h3 {
+            color: var(--text-primary);
+            margin-bottom: 10px;
+            font-size: 20px;
+        }
+
+        .kyc-overlay-content p {
+            color: var(--text-secondary);
+            margin-bottom: 20px;
+            line-height: 1.5;
+        }
+
+        .positions-orders {
+            background: var(--card-bg);
+            padding: 15px;
+            overflow-y: auto;
+        }
+
+        .account-summary {
+            background: var(--card-bg);
+            padding: 15px;
+        }
+
+        .section-title {
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 15px;
+            color: var(--text-primary);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-primary {
+            background: var(--primary-color);
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            color: white;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .btn-primary:hover {
+            background: var(--secondary-color);
+            transform: translateY(-1px);
+        }
+
+        .btn-success {
+            background: var(--success-color);
+            border: none;
+            padding: 12px 20px;
+            border-radius: 8px;
+            color: white;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            width: 100%;
+            margin-top: 10px;
+        }
+
+        .btn-success:hover:not(:disabled) {
+            background: #059669;
+            transform: translateY(-1px);
+        }
+
+        .btn-success:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .btn-danger {
+            background: var(--danger-color);
+            border: none;
+            padding: 12px 20px;
+            border-radius: 8px;
+            color: white;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            width: 100%;
+            margin-top: 10px;
+        }
+
+        .btn-danger:hover:not(:disabled) {
+            background: #dc2626;
+            transform: translateY(-1px);
+        }
+
+        .btn-danger:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .form-control {
+            background: var(--dark-bg);
+            border: 1px solid var(--border-color);
+            color: var(--text-primary);
+            padding: 10px 12px;
+            border-radius: 6px;
+            font-size: 14px;
+            margin-bottom: 12px;
+            width: 100%;
+        }
+
+        .form-control:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.2);
+        }
+
+        .form-label {
+            color: var(--text-secondary);
+            font-size: 13px;
+            font-weight: 500;
+            margin-bottom: 5px;
+            display: block;
+        }
+
+        .order-tabs {
+            display: flex;
+            margin-bottom: 20px;
+            border-radius: 8px;
+            overflow: hidden;
+            background: var(--dark-bg);
+        }
+
+        .order-tab {
+            flex: 1;
+            padding: 12px;
+            background: var(--dark-bg);
+            border: none;
+            color: var(--text-secondary);
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .order-tab.active {
+            background: var(--primary-color);
+            color: white;
+        }
+
+        .order-tab.buy.active {
+            background: var(--success-color);
+        }
+
+        .order-tab.sell.active {
+            background: var(--danger-color);
+        }
+
+        .orderbook-table {
+            width: 100%;
+            font-size: 12px;
+        }
+
+        .orderbook-table th {
+            color: var(--text-secondary);
+            font-weight: 500;
+            padding: 8px 4px;
+            text-align: right;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .orderbook-table td {
+            padding: 4px;
+            text-align: right;
+            font-family: 'Courier New', monospace;
+        }
+
+        .ask-row {
+            color: var(--danger-color);
+        }
+
+        .bid-row {
+            color: var(--success-color);
+        }
+
+        .spread-row {
+            background: var(--border-color);
+            text-align: center;
+            padding: 8px;
+            font-weight: 600;
+        }
+
+        .trades-table {
+            width: 100%;
+            font-size: 12px;
+        }
+
+        .trades-table th {
+            color: var(--text-secondary);
+            font-weight: 500;
+            padding: 8px 4px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .trades-table td {
+            padding: 4px;
+            font-family: 'Courier New', monospace;
+        }
+
+        .buy-trade {
+            color: var(--success-color);
+        }
+
+        .sell-trade {
+            color: var(--danger-color);
+        }
+
+        .balance-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 0;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .balance-item:last-child {
+            border-bottom: none;
+        }
+
+        .balance-token {
+            font-weight: 600;
+        }
+
+        .balance-amount {
+            text-align: right;
+        }
+
+        .connection-status {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            font-size: 12px;
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--success-color);
+            animation: pulse 2s infinite;
+        }
+
+        .status-dot.disconnected {
+            background: var(--danger-color);
+            animation: none;
+        }
+
+        @keyframes pulse {
+            0%, 100% {
+                opacity: 1;
+            }
+            50% {
+                opacity: 0.5;
+            }
+        }
+
+        .price-ladder {
+            max-height: 395px;
+            overflow-y: auto;
+        }
+
+        .trades-list {
+            max-height: 395px;
+            overflow-y: auto;
+        }
+
+        @media (max-width: 1200px) {
+            .trading-container {
+                grid-template-columns: 1fr;
+                grid-template-rows: auto auto 1fr auto;
+            }
+
+            .orderbook-trades {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .loading-spinner {
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            border: 2px solid var(--border-color);
+            border-radius: 50%;
+            border-top-color: white;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .error-message {
+            background: var(--danger-color);
+            color: white;
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            display: none;
+        }
+
+        .error-message.show {
+            display: block;
+        }
+
+        .auth-required {
+            text-align: center;
+            padding: 40px 20px;
+            color: var(--text-secondary);
+        }
+
+        .auth-required i {
+            font-size: 48px;
+            margin-bottom: 20px;
+            color: var(--primary-color);
+        }
+    </style>
+</head>
+<body>
+    <div class="trading-container">
+        <!-- Header -->
+        <header class="trading-header">
+            <div class="logo">
+                <i class="fas fa-chart-line"></i> NexusCrypt Trading
+            </div>
+
+            <div class="trading-pair-selector">
+                <select class="pair-dropdown" id="pairSelector">
+                    <option value="ETHUSDT">ETH/USDT</option>
+                    <option value="BTCUSDT">BTC/USDT</option>
+                    <option value="SOLUSDT">SOL/USDT</option>
+                    <option value="ADAUSDT">ADA/USDT</option>
+                </select>
+
+                <div class="price-display">
+                    <div class="current-price" id="currentPrice">Loading...</div>
+                    <div class="price-change positive" id="priceChange">+0.00%</div>
+                </div>
+            </div>
+
+            <div class="user-controls">
+                <div class="connection-status">
+                    <div class="status-dot disconnected" id="connectionDot"></div>
+                    <span id="connectionText">Connecting...</span>
+                </div>
+                <div class="network-badge">{{ 'Testnet' if config.NETWORK == 'sepolia' else 'Mainnet' }}</div>
+                {% if current_user.is_authenticated %}
+                <a href="{{ url_for('wallet_page') }}" class="btn-primary">Wallet</a>
+                {% else %}
+                <a href="{{ url_for('login') }}" class="btn-primary">Login to Trade</a>
+                {% endif %}
+            </div>
+        </header>
+
+        <!-- Left Sidebar -->
+        <aside class="sidebar">
+            <div class="section-title">
+                <i class="fas fa-wallet"></i> Portfolio
+                <button onclick="refreshPortfolio()" style="margin-left: auto; background: none; border: none; color: var(--text-secondary); cursor: pointer;">
+                    <i class="fas fa-sync-alt"></i>
+                </button>
+            </div>
+
+            {% if current_user.is_authenticated %}
+            <!-- Portfolio Assets with USD Values -->
+            <div id="portfolioAssets">
+                <div class="text-center text-muted py-3">
+                    <div class="loading-spinner"></div>
+                    <p>Loading portfolio...</p>
+                </div>
+            </div>
+
+            <!-- Total Portfolio Value -->
+            <div class="portfolio-summary" style="padding: 15px; background: var(--dark-bg); border-radius: 8px; margin: 15px 0;">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <span style="color: var(--text-secondary); font-size: 14px;">Total Portfolio Value</span>
+                    <span id="portfolioTotalUSD" style="font-size: 18px; font-weight: bold; color: var(--success-color);">$0.00</span>
+                </div>
+            </div>
+
+            <div style="display: flex; gap: 10px; margin-top: 10px;">
+                <a href="{{ url_for('wallet_page') }}" class="btn-primary"
+                   style="flex: 1; text-align: center; text-decoration: none; white-space: nowrap;">
+                    <i class="fas fa-plus"></i> Deposit
+                </a>
+                <a href="{{ url_for('wallet_page') }}" class="btn-primary"
+                   style="flex: 1; text-align: center; text-decoration: none; white-space: nowrap;">
+                    <i class="fas fa-minus"></i> Withdraw
+                </a>
+            </div>
+
+            <!-- Recent Trades Section -->
+            <div class="section-title mt-4" style="margin-top: 32px;">
+                <i class="fas fa-exchange-alt"></i> Recent Trades
+            </div>
+
+            <div class="recent-trades-list" id="userRecentTrades" style="max-height: 395px; overflow-y: auto;">
+                <div class="text-center text-muted py-3">
+                    <i class="fas fa-chart-line"></i><br>
+                    No trades yet
+                </div>
+            </div>
+            {% else %}
+            <div class="auth-required">
+                <i class="fas fa-lock"></i>
+                <p>Login to view your portfolio</p>
+                <a href="{{ url_for('login') }}" class="btn-primary">Login</a>
+            </div>
+            {% endif %}
+        </aside>
+
+        <!-- Main Trading Area -->
+        <main class="main-trading">
+            <!-- Chart Section -->
+            <div class="chart-section">
+                <div class="section-title">
+                    <i class="fas fa-chart-area"></i> Price Chart
+                    <div class="ms-auto">
+                        <small class="text-muted">Live Price Feed</small>
+                    </div>
+                </div>
+                <canvas id="priceChart" style="max-height: 400px;"></canvas>
+            </div>
+
+            <!-- Order Book and Recent Trades -->
+            <div class="orderbook-trades">
+                <div class="orderbook-section">
+                    <div class="section-title">
+                        <i class="fas fa-list"></i> Order Book
+                    </div>
+
+                    <div class="price-ladder">
+                        <table class="orderbook-table">
+                            <thead>
+                                <tr>
+                                    <th>Price</th>
+                                    <th>Amount</th>
+                                    <th>Total</th>
+                                </tr>
+                            </thead>
+                            <tbody id="orderbookAsks">
+                                <!-- Ask orders will be populated here -->
+                            </tbody>
+                        </table>
+
+                        <div class="spread-row" id="spreadDisplay">
+                            Spread: $0.00 (0.00%)
+                        </div>
+
+                        <table class="orderbook-table">
+                            <tbody id="orderbookBids">
+                                <!-- Bid orders will be populated here -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="trades-section">
+                    <div class="section-title">
+                        <i class="fas fa-exchange-alt"></i> Market Trades
+                    </div>
+
+                    <div class="trades-list">
+                        <table class="trades-table">
+                            <thead>
+                                <tr>
+                                    <th>Price</th>
+                                    <th>Amount</th>
+                                    <th>Time</th>
+                                </tr>
+                            </thead>
+                            <tbody id="recentTrades">
+                                <!-- Recent trades will be populated here -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <!-- Right Panel -->
+        <aside class="right-panel">
+            <!-- Order Form -->
+            <div class="order-form">
+                <div class="section-title">
+                    <i class="fas fa-plus-circle"></i> Place Order
+                </div>
+
+                <div id="orderError" class="error-message"></div>
+
+                {% if current_user.is_authenticated %}
+                <!-- KYC Overlay - This will be shown when KYC is not completed -->
+                <div id="kycOverlay" class="kyc-overlay" style="display: none;">
+                    <div class="kyc-overlay-content">
+                        <i class="fas fa-user-shield"></i>
+                        <h3>KYC Verification Required</h3>
+                        <p>To start trading on NexusCrypt, you need to complete our KYC verification process. This helps us ensure a secure trading environment for all users.</p>
+                        <a href="/profile" class="btn-primary">Complete KYC Verification</a>
+                    </div>
+                </div>
+
+                <div class="order-tabs">
+                    <button class="order-tab buy active" data-side="buy">Buy</button>
+                    <button class="order-tab sell" data-side="sell">Sell</button>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">Price (USDT)</label>
+                    <input type="number" class="form-control" id="orderPrice" placeholder="0.00" step="0.01" min="0">
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">Amount (<span id="baseAsset">ETH</span>)</label>
+                    <input type="number" class="form-control" id="orderAmount" placeholder="0.00" step="0.001" min="0">
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">Total (USDT)</label>
+                    <input type="number" class="form-control" id="orderTotal" placeholder="0.00" readonly>
+                </div>
+
+                <button class="btn-success" id="placeOrderBtn">
+                    <span id="orderBtnText">Buy ETH</span>
+                    <span id="orderSpinner" class="loading-spinner" style="display: none; margin-left: 8px;"></span>
+                </button>
+                {% else %}
+                <div class="auth-required">
+                    <i class="fas fa-lock"></i>
+                    <p>Login to start trading</p>
+                    <a href="{{ url_for('login') }}" class="btn-primary">Login</a>
+                </div>
+                {% endif %}
+            </div>
+
+            <!-- Open Orders and Positions -->
+            <div class="positions-orders">
+                <!-- Open Orders Section -->
+                <div class="section-title mt-4">
+                    <i class="fas fa-list-ul"></i> Open Orders
+                </div>
+
+                <div id="userOpenOrders" style="max-height: 400px; overflow-y: auto;">
+                    <div class="text-center text-muted py-3">
+                        <i class="fas fa-clipboard-list"></i><br>
+                        No open orders
+                    </div>
+                </div>
+            </div>
+        </aside>
+    </div>
+
+    <script>
+        // Global variables
+        let socket = null;
+        let priceChart = null;
+        let currentPair = 'ETHUSDT';
+        let currentSide = 'buy';
+        let isConnected = false;
+        let reconnectAttempts = 0;
+        const maxReconnectAttempts = 5;
+        const isAuthenticated = {{ 'true' if current_user.is_authenticated else 'false' }};
+        {% if current_user.is_authenticated %}
+        const userId = {{ current_user.id }};
+        {% else %}
+        const userId = null;
+        {% endif %}
+
+        // Helper function to get auth headers
+        function getAuthHeaders() {
+            const headers = {
+                'Content-Type': 'application/json',
+            };
+            if (userId) {
+                headers['X-User-ID'] = userId.toString();
+            }
+            return headers;
+        }
+
+        // Initialize application
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeApp();
+        });
+
+        function initializeApp() {
+            setupEventListeners();
+            initializePriceChart();
+            connectWebSocket();
+            loadInitialData();
+            if (isAuthenticated) {
+                checkKYCStatus(); // Check KYC status on load
+                loadPortfolioSummary();
+
+                // Refresh portfolio every 30 seconds
+                setInterval(loadPortfolioSummary, 30000);
+            }
+        }
+
+        async function checkKYCStatus() {
+            if (!isAuthenticated) return true;
+
+            try {
+                const response = await fetch('/api/kyc/status', {
+                    headers: getAuthHeaders()
+                });
+
+                if (!response.ok) return false;
+
+                const data = await response.json();
+
+                if (data.success && data.kyc_status !== 'approved') {
+                    // Show KYC overlay on order form
+                    const kycOverlay = document.getElementById('kycOverlay');
+                    if (kycOverlay) {
+                        kycOverlay.style.display = 'flex';
+                    }
+
+                    // Disable trading buttons
+                    const placeOrderBtn = document.getElementById('placeOrderBtn');
+                    if (placeOrderBtn) {
+                        placeOrderBtn.disabled = true;
+                        placeOrderBtn.title = 'KYC verification required';
+                    }
+
+                    return false;
+                } else {
+                    // Hide KYC overlay if approved
+                    const kycOverlay = document.getElementById('kycOverlay');
+                    if (kycOverlay) {
+                        kycOverlay.style.display = 'none';
+                    }
+
+                    // Enable trading buttons
+                    const placeOrderBtn = document.getElementById('placeOrderBtn');
+                    if (placeOrderBtn) {
+                        placeOrderBtn.disabled = false;
+                        placeOrderBtn.title = '';
+                    }
+
+                    return true;
+                }
+            } catch (error) {
+                console.error('Error checking KYC status:', error);
+                return false;
+            }
+        }
+
+        async function loadPortfolioSummary() {
+            if (!isAuthenticated) return;
+
+            try {
+                const response = await fetch('/api/portfolio/summary', {
+                    headers: getAuthHeaders()
+                });
+
+                if (!response.ok) throw new Error('Failed to fetch portfolio');
+
+                const data = await response.json();
+
+                if (data.success) {
+                    updatePortfolioDisplay(data.portfolio);
+                    updateRecentTrades(data.recent_trades);
+                    updateOpenOrders(data.open_orders);
+                }
+            } catch (error) {
+                console.error('Error loading portfolio:', error);
+            }
+        }
+
+        function updatePortfolioDisplay(portfolio) {
+            const portfolioContainer = document.getElementById('portfolioAssets');
+            if (!portfolioContainer || !portfolio || !portfolio.assets) return;
+
+            portfolioContainer.innerHTML = '';
+
+            // Sort assets by value (highest first)
+            const sortedAssets = portfolio.assets.sort((a, b) => b.value_usd - a.value_usd);
+
+            sortedAssets.forEach(asset => {
+                if (asset.balance > 0) {
+                    const assetElement = document.createElement('div');
+                    assetElement.className = 'balance-item';
+                    assetElement.innerHTML = `
+                        <div class="balance-token">
+                            <strong>${asset.currency}</strong>
+                            <small style="color: var(--text-secondary); display: block; font-size: 11px;">
+                                ${asset.available.toFixed(6)} available
+                            </small>
+                        </div>
+                        <div class="balance-amount">
+                            <div>${asset.balance.toFixed(6)}</div>
+                            <small style="color: var(--text-secondary);">$${asset.value_usd.toFixed(2)}</small>
+                        </div>
+                    `;
+                    portfolioContainer.appendChild(assetElement);
+                }
+            });
+
+            // Update total portfolio value
+            const totalElement = document.getElementById('portfolioTotalUSD');
+            if (totalElement) {
+                totalElement.textContent = `$${portfolio.total_value_usd.toFixed(2)}`;
+            }
+        }
+
+        function updateOpenOrders(orders) {
+            const ordersContainer = document.getElementById('userOpenOrders');
+            if (!ordersContainer) return;
+
+            if (!orders || orders.length === 0) {
+                ordersContainer.innerHTML = `
+                    <div class="text-center text-muted py-3">
+                        <i class="fas fa-clipboard-list"></i><br>
+                        No open orders
+                    </div>
+                `;
+                return;
+            }
+
+            ordersContainer.innerHTML = '';
+
+            orders.forEach(order => {
+                const orderElement = document.createElement('div');
+                orderElement.className = 'order-item';
+                orderElement.style.cssText = 'padding: 8px; border-bottom: 1px solid var(--border-color); font-size: 12px;';
+
+                const sideColor = order.side === 'buy' ? 'var(--success-color)' : 'var(--danger-color)';
+                const fillPercent = ((order.filled / order.amount) * 100).toFixed(1);
+
+                orderElement.innerHTML = `
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
+                        <span style="color: ${sideColor}; font-weight: 600; text-transform: uppercase;">${order.side}</span>
+                        <span style="color: var(--text-secondary);">${order.status}</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between;">
+                        <span>${order.pair}</span>
+                        <span>${order.amount.toFixed(6)} @ $${order.price.toFixed(2)}</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 4px;">
+                        <div style="flex: 1; height: 4px; background: var(--border-color); border-radius: 2px; margin-right: 8px;">
+                            <div style="height: 100%; background: ${sideColor}; width: ${fillPercent}%; border-radius: 2px;"></div>
+                        </div>
+                        <span style="color: var(--text-secondary); font-size: 11px;">${fillPercent}%</span>
+                    </div>
+                `;
+
+                ordersContainer.appendChild(orderElement);
+            });
+        }
+
+        async function cancelOrder(orderId) {
+            if (!confirm('Are you sure you want to cancel this order?')) return;
+
+            try {
+                const response = await fetch(`/api/orders/${orderId}`, {
+                    method: 'DELETE',
+                    headers: getAuthHeaders()
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    showSuccess('Order cancelled successfully');
+                    loadPortfolioSummary(); // Refresh display
+                } else {
+                    showError(data.error || 'Failed to cancel order');
+                }
+            } catch (error) {
+                console.error('Error cancelling order:', error);
+                showError('Error cancelling order');
+            }
+        }
+
+        // Refresh portfolio button handler
+        async function refreshPortfolio() {
+            if (!isAuthenticated) return;
+            await loadPortfolioSummary();
+        }
+
+        // MODIFY THE EXISTING placeOrder() FUNCTION TO CHECK KYC:
+        async function placeOrder() {
+            if (!isAuthenticated) {
+                window.location.href = '/login';
+                return;
+            }
+
+            // CHECK KYC STATUS BEFORE PLACING ORDER
+            const hasKYC = await checkKYCStatus();
+            if (!hasKYC) {
+                showError('KYC verification required to trade. Please complete KYC verification.');
+                return;
+            }
+
+            const price = parseFloat(document.getElementById('orderPrice')?.value);
+            const amount = parseFloat(document.getElementById('orderAmount')?.value);
+
+            if (!price || !amount || price <= 0 || amount <= 0) {
+                showError('Please enter valid price and amount');
+                return;
+            }
+
+            // Show loading state
+            const btn = document.getElementById('placeOrderBtn');
+            const spinner = document.getElementById('orderSpinner');
+            if (btn) btn.disabled = true;
+            if (spinner) spinner.style.display = 'inline-block';
+
+            try {
+                const response = await fetch('/api/orders/place', {
+                    method: 'POST',
+                    headers: getAuthHeaders(),
+                    body: JSON.stringify({
+                        pair: currentPair,
+                        side: currentSide,
+                        price: price,
+                        amount: amount
+                    })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    showSuccess('Order placed successfully!');
+                    // Clear form
+                    const amountInput = document.getElementById('orderAmount');
+                    const totalInput = document.getElementById('orderTotal');
+                    if (amountInput) amountInput.value = '';
+                    if (totalInput) totalInput.value = '';
+                    // Reload portfolio
+                    loadPortfolioSummary();
+                    hideError();
+                } else {
+                    showError(data.error || 'Failed to place order');
+                }
+            } catch (error) {
+                console.error('Order placement error:', error);
+                showError('Error placing order. Please try again.');
+            } finally {
+                // Hide loading state
+                if (btn) btn.disabled = false;
+                if (spinner) spinner.style.display = 'none';
+            }
+        }
+
+        function updateRecentTrades(trades) {
+            const tradesContainer = document.getElementById('userRecentTrades');
+            if (!tradesContainer || !trades || trades.length === 0) return;
+
+            tradesContainer.innerHTML = '';
+
+            trades.forEach(trade => {
+                const tradeElement = document.createElement('div');
+                tradeElement.className = 'trade-item';
+                tradeElement.style.cssText = 'padding: 8px; border-bottom: 1px solid var(--border-color); font-size: 12px;';
+
+                const sideColor = trade.side === 'buy' ? 'var(--success-color)' : 'var(--danger-color)';
+                const time = new Date(trade.timestamp).toLocaleTimeString();
+
+                tradeElement.innerHTML = `
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
+                        <span style="color: ${sideColor}; font-weight: 600; text-transform: uppercase;">${trade.side}</span>
+                        <span style="color: var(--text-secondary);">${time}</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between;">
+                        <span>${trade.pair}</span>
+                        <span>${trade.amount.toFixed(6)} @ $${trade.price.toFixed(2)}</span>
+                    </div>
+                    <div style="color: var(--text-secondary); font-size: 11px; margin-top: 2px;">
+                        Total: $${trade.total.toFixed(2)} | Fee: $${trade.fee.toFixed(4)}
+                    </div>
+                `;
+
+                tradesContainer.appendChild(tradeElement);
+            });
+        }
+
+function setupEventListeners() {
+            // Pair selector
+            const pairSelector = document.getElementById('pairSelector');
+            if (pairSelector) {
+                pairSelector.addEventListener('change', function() {
+                    currentPair = this.value;
+                    updateBaseAsset();
+                    subscribeToNewPair();
+                    loadHistoricalData(); // FIXED: Reload historical data on pair change
+                });
+            }
+
+            // Order tabs
+            document.querySelectorAll('.order-tab').forEach(tab => {
+                tab.addEventListener('click', function() {
+                    if (isAuthenticated) {
+                        switchOrderSide(this.dataset.side);
+                    }
+                });
+            });
+
+            // Order form inputs
+            const orderPrice = document.getElementById('orderPrice');
+            const orderAmount = document.getElementById('orderAmount');
+
+            if (orderPrice) orderPrice.addEventListener('input', calculateTotal);
+            if (orderAmount) orderAmount.addEventListener('input', calculateTotal);
+
+            // Place order button
+            const placeOrderBtn = document.getElementById('placeOrderBtn');
+            if (placeOrderBtn && isAuthenticated) {
+                placeOrderBtn.addEventListener('click', placeOrder);
+            }
+        }
+
+        function initializePriceChart() {
+            const ctx = document.getElementById('priceChart');
+            if (!ctx) return;
+
+            priceChart = new Chart(ctx.getContext('2d', {willReadFrequently: true}), {
+                type: 'line',
+                data: {
+                    labels: [],
+                    datasets: [{
+                        label: currentPair,
+                        data: [],
+                        borderColor: '#667eea',
+                        backgroundColor: 'rgba(102, 126, 234, 0.1)',
+                        borderWidth: 2,
+                        fill: true,
+                        tension: 0.4,
+                        pointRadius: 0,
+                        pointHitRadius: 10
+                    }]
+                },
+                options: {
+                    elements: {
+    line: {
+      borderWidth: 2,
+      fill: true,
+      tension: 0.1,
+      cubicInterpolationMode: 'monotone', // Add this!
+      borderDash: [],
+      clip: {left: false, top: false, right: false, bottom: -2}  // or 'clip: true'
+    }
+  },
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        x: {
+                            display: false
+                        },
+                        y: {
+                            position: 'right',
+                            grid: {
+                                color: '#2d3748'
+                            },
+                            ticks: {
+                                color: '#a0aec0'
+                            }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    },
+                    interaction: {
+                        intersect: false,
+                        mode: 'index'
+                    }
+                }
+            });
+        }
+
+        function connectWebSocket() {
+            try {
+                socket = io({
+                    transports: ['websocket', 'polling'],
+                    reconnection: true,
+                    reconnectionDelay: 1000,
+                    reconnectionAttempts: maxReconnectAttempts
+                });
+
+                socket.on('connect', function() {
+                    console.log('WebSocket connected');
+                    isConnected = true;
+                    reconnectAttempts = 0;
+                    updateConnectionStatus(true);
+                    subscribeToUpdates();
+                });
+
+                socket.on('disconnect', function() {
+                    console.log('WebSocket disconnected');
+                    isConnected = false;
+                    updateConnectionStatus(false);
+                });
+
+                socket.on('connect_error', function(error) {
+                    console.error('Connection error:', error);
+                    reconnectAttempts++;
+                    if (reconnectAttempts >= maxReconnectAttempts) {
+                        updateConnectionStatus(false);
+                        showError('Connection lost. Please refresh the page.');
+                    }
+                });
+
+                socket.on('price_update', function(data) {
+                    if (data.pair === currentPair) {
+                        updatePrice(data.price, data.change);
+                        updateChart(data);
+                    }
+                });
+
+                socket.on('orderbook_update', function(data) {
+                    if (data.pair === currentPair) {
+                        updateOrderBook(data);
+                    }
+                });
+
+                socket.on('trade_update', function(data) {
+                    if (data.pair === currentPair) {
+                        addTradeToList(data);
+                    }
+                });
+
+                if (isAuthenticated) {
+                    socket.on('balance_update', function(data) {
+                        updateBalances(data);
+                    });
+                }
+            } catch (error) {
+                console.error('WebSocket initialization error:', error);
+                updateConnectionStatus(false);
+            }
+        }
+
+        function updateConnectionStatus(connected) {
+            const dot = document.getElementById('connectionDot');
+            const text = document.getElementById('connectionText');
+
+            if (dot && text) {
+                if (connected) {
+                    dot.classList.remove('disconnected');
+                    text.textContent = 'Connected';
+                } else {
+                    dot.classList.add('disconnected');
+                    text.textContent = 'Disconnected';
+                }
+            }
+        }
+
+        function subscribeToUpdates() {
+            if (socket && socket.connected) {
+                socket.emit('subscribe', { pair: currentPair });
+            }
+        }
+
+        function subscribeToNewPair() {
+            if (socket && socket.connected) {
+                socket.emit('unsubscribe', { pair: currentPair });
+                socket.emit('subscribe', { pair: currentPair });
+            }
+            loadOrderBook();
+            loadRecentTrades();
+        }
+
+        function loadInitialData() {
+            loadHistoricalData(); // FIXED: Load historical data instead of single price
+            loadOrderBook();
+            loadRecentTrades();
+        }
+
+        // FIXED: New function to load historical data from database
+        async function loadHistoricalData() {
+            try {
+                const response = await fetch(`/api/market/history/${currentPair}?hours=24&limit=100`);
+                if (!response.ok) throw new Error('Failed to fetch historical data');
+                const data = await response.json();
+
+                if (data.success && data.data && data.data.length > 0) {
+                    // Clear existing chart data
+                    priceChart.data.labels = [];
+                    priceChart.data.datasets[0].data = [];
+
+                    // Add all historical data points
+                    data.data.forEach(point => {
+                        const time = new Date(point.timestamp).toLocaleTimeString();
+                        priceChart.data.labels.push(time);
+                        priceChart.data.datasets[0].data.push(point.price);
+                    });
+
+                    priceChart.update();
+
+                    // Update current price display
+                    const latestPrice = data.data[data.data.length - 1].price;
+                    const priceElement = document.getElementById('currentPrice');
+                    if (priceElement) {
+                        priceElement.textContent = `$${parseFloat(latestPrice).toFixed(2)}`;
+                    }
+
+                    // Update order price input
+                    const orderPriceInput = document.getElementById('orderPrice');
+                    if (orderPriceInput && !orderPriceInput.value) {
+                        orderPriceInput.value = parseFloat(latestPrice).toFixed(2);
+                    }
+                } else {
+                    // Fallback to current price if no historical data
+                    await loadCurrentPrice();
+                }
+            } catch (error) {
+                console.error('Error loading historical data:', error);
+                // Fallback to old method
+                await loadCurrentPrice();
+            }
+        }
+
+        async function loadCurrentPrice() {
+            try {
+                const response = await fetch(`/api/market/price/${currentPair}`);
+                if (!response.ok) throw new Error('Failed to fetch price');
+                const data = await response.json();
+                if (data.success && data.price) {
+                    updatePrice(data.price, data.change || 0);
+                }
+            } catch (error) {
+                console.error('Error loading price:', error);
+                document.getElementById('currentPrice').textContent = 'N/A';
+            }
+        }
+
+        function updatePrice(price, change) {
+            const priceElement = document.getElementById('currentPrice');
+            const changeElement = document.getElementById('priceChange');
+
+            if (priceElement) {
+                priceElement.textContent = `$${parseFloat(price).toFixed(2)}`;
+            }
+
+            if (changeElement && change !== undefined) {
+                const changeValue = parseFloat(change);
+                changeElement.textContent = `${changeValue >= 0 ? '+' : ''}${changeValue.toFixed(2)}%`;
+                changeElement.className = `price-change ${changeValue >= 0 ? 'positive' : 'negative'}`;
+            }
+
+            // Update order price input
+            const orderPriceInput = document.getElementById('orderPrice');
+            if (orderPriceInput && !orderPriceInput.value) {
+                orderPriceInput.value = parseFloat(price).toFixed(2);
+            }
+        }
+
+        function updateChart(data) {
+            if (!priceChart) return;
+
+            if (priceChart.data.labels.length > 100) {
+                priceChart.data.labels.shift();
+                priceChart.data.datasets[0].data.shift();
+            }
+
+            const time = new Date().toLocaleTimeString();
+            priceChart.data.labels.push(time);
+            priceChart.data.datasets[0].data.push(parseFloat(data.price));
+            priceChart.update('none');
+        }
+
+        async function loadOrderBook() {
+            try {
+                const response = await fetch(`/api/market/orderbook/${currentPair}`);
+                if (!response.ok) throw new Error('Failed to fetch orderbook');
+                const data = await response.json();
+                if (data.success) {
+                    updateOrderBook(data);
+                }
+            } catch (error) {
+                console.error('Error loading order book:', error);
+            }
+        }
+
+        function updateOrderBook(data) {
+            const asksBody = document.getElementById('orderbookAsks');
+            const bidsBody = document.getElementById('orderbookBids');
+
+            if (!asksBody || !bidsBody) return;
+
+            // Clear existing data
+            asksBody.innerHTML = '';
+            bidsBody.innerHTML = '';
+
+            // Add asks (sell orders) - reverse order to show highest first
+            const asks = (data.asks || []).slice(0, 10).reverse();
+            asks.forEach(ask => {
+                const row = document.createElement('tr');
+                row.className = 'ask-row';
+                const total = (ask.price * ask.quantity).toFixed(2);
+                row.innerHTML = `
+                    <td>${parseFloat(ask.price).toFixed(2)}</td>
+                    <td>${parseFloat(ask.quantity).toFixed(6)}</td>
+                    <td>${total}</td>
+                `;
+                asksBody.appendChild(row);
+            });
+
+            // Add bids (buy orders)
+            const bids = (data.bids || []).slice(0, 10);
+            bids.forEach(bid => {
+                const row = document.createElement('tr');
+                row.className = 'bid-row';
+                const total = (bid.price * bid.quantity).toFixed(2);
+                row.innerHTML = `
+                    <td>${parseFloat(bid.price).toFixed(2)}</td>
+                    <td>${parseFloat(bid.quantity).toFixed(6)}</td>
+                    <td>${total}</td>
+                `;
+                bidsBody.appendChild(row);
+            });
+
+            // Update spread
+            if (data.asks && data.asks.length > 0 && data.bids && data.bids.length > 0) {
+                const spread = data.asks[0].price - data.bids[0].price;
+                const spreadPercent = (spread / data.bids[0].price * 100).toFixed(3);
+                const spreadDisplay = document.getElementById('spreadDisplay');
+                if (spreadDisplay) {
+                    spreadDisplay.textContent = `Spread: $${spread.toFixed(2)} (${spreadPercent}%)`;
+                }
+            }
+        }
+
+        async function loadRecentTrades() {
+            try {
+                const response = await fetch(`/api/market/trades/${currentPair}`);
+                if (!response.ok) throw new Error('Failed to fetch trades');
+                const data = await response.json();
+                const tradesBody = document.getElementById('recentTrades');
+                if (tradesBody && data.success && data.trades) {
+                    tradesBody.innerHTML = '';
+                    data.trades.slice(0, 20).forEach(trade => {
+                        addTradeToList(trade);
+                    });
+                }
+            } catch (error) {
+                console.error('Error loading trades:', error);
+            }
+        }
+
+        function addTradeToList(trade) {
+            const tradesBody = document.getElementById('recentTrades');
+            if (!tradesBody) return;
+
+            const row = document.createElement('tr');
+            const time = new Date(trade.timestamp || Date.now()).toLocaleTimeString();
+            const side = trade.side || (trade.buyer_id ? 'buy' : 'sell');
+
+            row.className = side === 'buy' ? 'buy-trade' : 'sell-trade';
+            row.innerHTML = `
+                <td>${parseFloat(trade.price).toFixed(2)}</td>
+                <td>${parseFloat(trade.quantity || trade.amount).toFixed(6)}</td>
+                <td>${time}</td>
+            `;
+
+            tradesBody.insertBefore(row, tradesBody.firstChild);
+
+            // Keep only last 20 trades
+            while (tradesBody.children.length > 20) {
+                tradesBody.removeChild(tradesBody.lastChild);
+            }
+        }
+
+        function switchOrderSide(side) {
+            if (!isAuthenticated) return;
+
+            currentSide = side;
+
+            // Update tab appearance
+            document.querySelectorAll('.order-tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            document.querySelector(`[data-side="${side}"]`).classList.add('active');
+
+            // Update button
+            const btn = document.getElementById('placeOrderBtn');
+            const btnText = document.getElementById('orderBtnText');
+
+            if (btn && btnText) {
+                if (side === 'buy') {
+                    btn.className = 'btn-success';
+                    btnText.textContent = `Buy ${getBaseAsset()}`;
+                } else {
+                    btn.className = 'btn-danger';
+                    btnText.textContent = `Sell ${getBaseAsset()}`;
+                }
+            }
+        }
+
+        function getBaseAsset() {
+            return currentPair.replace('USDT', '');
+        }
+
+        function updateBaseAsset() {
+            const baseAssetElement = document.getElementById('baseAsset');
+            if (baseAssetElement) {
+                baseAssetElement.textContent = getBaseAsset();
+            }
+            const btnText = document.getElementById('orderBtnText');
+            if (btnText) {
+                btnText.textContent = `${currentSide === 'buy' ? 'Buy' : 'Sell'} ${getBaseAsset()}`;
+            }
+        }
+
+        function calculateTotal() {
+            const price = parseFloat(document.getElementById('orderPrice')?.value) || 0;
+            const amount = parseFloat(document.getElementById('orderAmount')?.value) || 0;
+            const total = price * amount;
+            const totalInput = document.getElementById('orderTotal');
+            if (totalInput) {
+                totalInput.value = total.toFixed(2);
+            }
+        }
+
+        async function loadBalances() {
+            if (!isAuthenticated) return;
+
+            try {
+                const response = await fetch('/api/wallet/balances', {
+                    headers: getAuthHeaders()
+                });
+                if (!response.ok) throw new Error('Failed to fetch balances');
+                const data = await response.json();
+
+                // FIXED: Properly handle nested structure
+                if (data.success && data.balances) {
+                    // Convert structure: {ETH: {balance: 1.0, available: 0.5, locked: 0.5}}
+                    // to: {ETH: 1.0, USDT: 1000.0}
+                    const flatBalances = {};
+                    for (const [currency, walletData] of Object.entries(data.balances)) {
+                        flatBalances[currency] = walletData.balance;
+                    }
+                    updateBalances(flatBalances);
+                }
+            } catch (error) {
+                console.error('Error loading balances:', error);
+            }
+        }
+
+        function updateBalances(balances) {
+            if (!balances) return;
+
+            // Update individual balance displays
+            if (balances.ETH !== undefined) {
+                const ethBalance = document.getElementById('ethBalance');
+                if (ethBalance) ethBalance.textContent = parseFloat(balances.ETH).toFixed(5);
+            }
+            if (balances.USDT !== undefined) {
+                const usdtBalance = document.getElementById('usdtBalance');
+                if (usdtBalance) usdtBalance.textContent = parseFloat(balances.USDT).toFixed(2);
+            }
+            if (balances.BTC !== undefined) {
+                const btcBalance = document.getElementById('btcBalance');
+                if (btcBalance) btcBalance.textContent = parseFloat(balances.BTC).toFixed(5);
+            }
+
+            // Update account summary
+            const currentPrice = parseFloat(document.getElementById('currentPrice')?.textContent.replace('$', '')) || 0;
+            const ethBalance = parseFloat(balances.ETH || 0);
+            const usdtBalance = parseFloat(balances.USDT || 0);
+            const btcBalance = parseFloat(balances.BTC || 0);
+
+            const totalValue = (ethBalance * currentPrice) + usdtBalance + (btcBalance * 50000); // Approximate BTC price
+
+            const totalBalanceElement = document.getElementById('totalBalance');
+            const availableBalanceElement = document.getElementById('availableBalance');
+
+            if (totalBalanceElement) totalBalanceElement.textContent = `$${totalValue.toFixed(2)}`;
+            if (availableBalanceElement) availableBalanceElement.textContent = `$${totalValue.toFixed(2)}`;
+        }
+
+        async function placeOrder() {
+            if (!isAuthenticated) {
+                window.location.href = '/login';
+                return;
+            }
+
+            const price = parseFloat(document.getElementById('orderPrice')?.value);
+            const amount = parseFloat(document.getElementById('orderAmount')?.value);
+
+            if (!price || !amount || price <= 0 || amount <= 0) {
+                showError('Please enter valid price and amount');
+                return;
+            }
+
+            // Show loading state
+            const btn = document.getElementById('placeOrderBtn');
+            const spinner = document.getElementById('orderSpinner');
+            if (btn) btn.disabled = true;
+            if (spinner) spinner.style.display = 'inline-block';
+
+            try {
+                const response = await fetch('/api/orders/place', {
+                    method: 'POST',
+                    headers: getAuthHeaders(),
+                    body: JSON.stringify({
+                        pair: currentPair,
+                        side: currentSide,
+                        price: price,
+                        amount: amount
+                    })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    showSuccess('Order placed successfully!');
+                    // Clear form
+                    const amountInput = document.getElementById('orderAmount');
+                    const totalInput = document.getElementById('orderTotal');
+                    if (amountInput) amountInput.value = '';
+                    if (totalInput) totalInput.value = '';
+                    // Reload balances
+                    loadBalances();
+                    hideError();
+                } else {
+                    showError(data.error || 'Failed to place order');
+                }
+            } catch (error) {
+                console.error('Order placement error:', error);
+                showError('Error placing order. Please try again.');
+            } finally {
+                // Hide loading state
+                if (btn) btn.disabled = false;
+                if (spinner) spinner.style.display = 'none';
+            }
+        }
+
+        function showError(message) {
+            const errorElement = document.getElementById('orderError');
+            if (errorElement) {
+                errorElement.textContent = message;
+                errorElement.classList.add('show');
+                setTimeout(() => hideError(), 5000);
+            }
+        }
+
+        function hideError() {
+            const errorElement = document.getElementById('orderError');
+            if (errorElement) {
+                errorElement.classList.remove('show');
+            }
+        }
+
+        function showSuccess(message) {
+            // Using the flash message system from base.html
+            alert(message);
+        }
+    </script>
+</body>
+</html>
+{% endblock %}

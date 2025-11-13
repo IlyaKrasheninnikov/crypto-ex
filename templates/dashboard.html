@@ -1,0 +1,65 @@
+{# templates/dashboard.html #}
+{% extends "base.html" %}
+
+{% block title %}Dashboard{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto px-4 py-6">
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <!-- Wallet Overview -->
+        <div class="card">
+            <h2 class="text-xl font-semibold mb-4">Wallet Overview</h2>
+            {% for wallet in wallets %}
+            <div class="flex justify-between items-center mb-3">
+                <span>{{ wallet.currency }}</span>
+                <span>{{ "%.8f"|format(wallet.balance) }}</span>
+            </div>
+            {% endfor %}
+        </div>
+
+        <!-- Market Overview -->
+        <div class="card">
+            <h2 class="text-xl font-semibold mb-4">Market Overview</h2>
+            <div id="market-data">
+                Loading market data...
+            </div>
+        </div>
+
+        <!-- Recent Activity -->
+        <div class="card">
+            <h2 class="text-xl font-semibold mb-4">Recent Activity</h2>
+            <div class="text-gray-400">
+                No recent activity
+            </div>
+        </div>
+    </div>
+</div>
+
+{% block extra_js %}
+<script>
+async function fetchMarketData() {
+    try {
+        const response = await fetch('/get_popular_coins?timeframe=24h');
+        const data = await response.json();
+        
+        const marketDataHtml = data.map(coin => `
+            <div class="flex justify-between items-center mb-3">
+                <span>${coin.symbol}</span>
+                <span class="${coin.priceChangePercent >= 0 ? 'text-green-500' : 'text-red-500'}">
+                    ${coin.priceChangePercent}%
+                </span>
+            </div>
+        `).join('');
+        
+        document.getElementById('market-data').innerHTML = marketDataHtml;
+    } catch (error) {
+        console.error('Error fetching market data:', error);
+    }
+}
+
+// Fetch initial data and update every minute
+fetchMarketData();
+setInterval(fetchMarketData, 60000);
+</script>
+{% endblock %}
+{% endblock %}

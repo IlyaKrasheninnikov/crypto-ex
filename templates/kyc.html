@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="kyc-container">
+    <div class="card kyc-form">
+        <h2>KYC Verification</h2>
+        <form method="POST">
+            <div class="form-group">
+                <label>Full Name</label>
+                <input type="text" name="full_name" class="input" required>
+            </div>
+
+            <div class="form-group">
+                <label>Date of Birth</label>
+                <input type="date" name="dob" class="input" required>
+            </div>
+
+            <div class="form-group">
+                <label>ID Document Type</label>
+                <select name="doc_type" class="input" required>
+                    <option value="passport">Passport</option>
+                    <option value="drivers_license">Driver's License</option>
+                    <option value="id_card">National ID Card</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label>Upload ID Document</label>
+                <input type="file" name="id_document" class="input" required>
+            </div>
+
+            <div class="form-group">
+                <label>Upload Selfie with ID</label>
+                <input type="file" name="selfie" class="input" required>
+            </div>
+
+            <button type="submit" class="btn">Submit KYC Documents</button>
+        </form>
+    </div>
+</div>
+
+<style>
+.kyc-container {
+    max-width: 600px;
+    margin: 0 auto;
+}
+
+.form-group {
+    margin-bottom: 1.5rem;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 0.5rem;
+}
+</style>

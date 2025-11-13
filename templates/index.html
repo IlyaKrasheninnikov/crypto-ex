@@ -1,0 +1,560 @@
+{% extends "base.html" %}
+{% block content %}
+{% if not current_user.is_authenticated %}
+<div class="hero">
+    <h1>Welcome to NexusCrypt</h1>
+    <div class="promo">
+        <h2>🚀 Special Promotion 🚀</h2>
+        <p>Get 50% off on Trading Fees for the First 3 Months!</p>
+        <a href="{{ url_for('register') }}" class="btn">Claim Your Offer</a>
+    </div>
+</div>
+{% endif %}
+
+<div class="market-overview">
+    <div class="catch-trading-opportunity">
+    </div>
+
+    <div class="market-section">
+        <!-- Hot Derivatives Section -->
+        <div class="hot-derivatives">
+            <div class="section-header">
+                <h3>Popular Derivatives</h3>
+                <!-- Timeframe Dropdown Menu -->
+                <div class="timeframe-dropdown">
+                    <select id="timeframe" onchange="fetchPopularCoins()">
+                        <option value="24h">Last 24 Hours</option>
+                        <option selected="selected" value="7d">Last 7 Days</option>
+                        <option value="30d">Last 30 Days</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="trading-table">
+                <table id="popular-coins-table">
+                    <thead>
+                        <tr>
+                            <th style="text-align: left; padding-left: 57px">Name</th>
+                            <th>Price</th>
+                            <th>24H Change</th>
+                            <th>Last 7 Days	</th>
+                            <th>Trade</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!-- Dynamic content will be inserted here -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Gainers and Listings Section Side-by-Side -->
+        <div class="gainers-and-listings">
+            <!-- Top Gainers Section -->
+            <div class="gainers">
+                <div class="card">
+                    <h3 class="card-header">Top Gainers of the Week</h3>
+                    <div id="top-gainers" class="news-cards">
+                        <!-- Dynamic content will be inserted here -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- New Listings Section -->
+            <div class="new-listings">
+                <div class="card">
+                    <h3 class="card-header">New Listings</h3>
+                    <div id="new-listings" class="news-cards">
+                        <!-- Dynamic content will be inserted here -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Function to format numbers with a maximum of 5 decimal places
+    function formatFloat(num) {
+        return parseFloat(num.toFixed(5)).toString();
+    }
+
+    // Function to safely fetch data with error handling
+    async function safeFetch(url, errorMessage) {
+        try {
+            const response = await fetch(url);
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            return await response.json();
+        } catch (error) {
+            console.error(errorMessage, error);
+            return null;
+        }
+    }
+
+    // Function to fetch and display popular coins based on the selected timeframe
+    async function fetchPopularCoins() {
+        const timeframe = document.getElementById('timeframe')?.value || '7d';
+        const data = await safeFetch(`/get_popular_coins?timeframe=${timeframe}`, 'Error fetching popular coins:');
+        
+        if (!data) {
+            const tableBody = document.querySelector("#popular-coins-table tbody");
+            if (tableBody) {
+                tableBody.innerHTML = '<tr><td colspan="5" style="text-align: center; padding: 20px; color: #999;">Failed to load market data. Please try again later.</td></tr>';
+            }
+            return;
+        }
+
+        const tableBody = document.querySelector("#popular-coins-table tbody");
+        if (!tableBody) return;
+        
+        tableBody.innerHTML = ""; // Clear the table body
+
+        data.forEach(coin => {
+            const row = document.createElement("tr");
+
+            // Determine the filter for the graph based on 7-day performance
+            const graphFilter = coin.priceChange.priceChange7d >= 0
+                ? 'hue-rotate(85deg) saturate(80%) brightness(0.85)'  // Green filter for positive change
+                : 'hue-rotate(300deg) saturate(210%) brightness(0.7) contrast(170%)';  // Red filter for negative change
+
+            // Adding coin details to the row with icon, name, symbol, price change, and graph
+            row.innerHTML = `
+                <td style="text-align: left;">
+                    <div style="display: flex; align-items: center;">
+                        <img src="https://s2.coinmarketcap.com/static/img/coins/64x64/${coin.id}.png" 
+                             alt="${coin.symbol}" 
+                             onerror="this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%2230%22 height=%2230%22%3E%3Crect fill=%22%23ddd%22 width=%2230%22 height=%2230%22/%3E%3C/svg%3E'" 
+                             style="width: 30px; height: 30px; margin-right: 10px;">
+                        <div>
+                            <div style="font-weight: bold;">
+                                <a href="/price/${coin.symbol}" style="color: #fff; text-decoration: none;">${coin.name}</a>
+                            </div>
+                            <div style="color: gray;">
+                                <a href="/price/${coin.symbol}" style="color: gray; text-decoration: none;">${coin.symbol}</a>
+                            </div>
+                        </div>
+                    </div>
+                </td>
+                <td>$${formatFloat(coin.priceChange.price)}</td>
+                <td class="change ${coin.priceChange.priceChange24h >= 0 ? 'up' : 'down'}">
+                    ${coin.priceChange.priceChange24h.toFixed(2)}%
+                </td>
+                <td>
+                    <img src="https://s3.coinmarketcap.com/generated/sparklines/web/7d/usd/${coin.id}.svg" 
+                         alt="7-day trend" 
+                         onerror="this.style.display='none'" 
+                         style="width: 100px; filter: ${graphFilter};">
+                </td>
+                <td><a href="{{ url_for('trading_page') }}?pair=${coin.symbol}USDT" class="trade-btn">Trade</a></td>
+            `;
+
+            tableBody.appendChild(row);
+        });
+    }
+
+    // Fetch new listings and top gainers
+    async function loadNewListings() {
+        const data = await safeFetch('/get_new_listings', 'Error fetching new listings:');
+        if (!data) {
+            const listingsContainer = document.getElementById('new-listings');
+            if (listingsContainer) {
+                listingsContainer.innerHTML = '<p style="text-align: center; color: #999; padding: 20px;">Failed to load new listings</p>';
+            }
+            return;
+        }
+
+        const listingsContainer = document.getElementById('new-listings');
+        if (!listingsContainer) return;
+        
+        listingsContainer.innerHTML = '';
+        
+        data.forEach(listing => {
+            const listingItem = document.createElement('a');
+            listingItem.href = `/price/${listing.symbol}`;
+            listingItem.classList.add('card-item');
+            listingItem.style.textDecoration = 'none';
+            listingItem.style.color = 'inherit';
+            
+            const price = listing.quote?.USD?.price || 0;
+            
+            listingItem.innerHTML = `
+                <div style="display: flex; align-items: center;">
+                    <img src="https://s2.coinmarketcap.com/static/img/coins/64x64/${listing.id}.png" 
+                         alt="${listing.symbol}" 
+                         onerror="this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%2230%22 height=%2230%22%3E%3Crect fill=%22%23ddd%22 width=%2230%22 height=%2230%22/%3E%3C/svg%3E'" 
+                         style="width: 30px; height: 30px; margin-right: 10px;">
+                    <span class="pair">${listing.symbol}</span>
+                </div>
+                <span>$${formatFloat(parseFloat(price))}</span>
+            `;
+            listingsContainer.appendChild(listingItem);
+        });
+    }
+
+    async function loadTopGainers() {
+        const data = await safeFetch('/get_top_gainers', 'Error fetching top gainers:');
+        if (!data) {
+            const gainersContainer = document.getElementById('top-gainers');
+            if (gainersContainer) {
+                gainersContainer.innerHTML = '<p style="text-align: center; color: #999; padding: 20px;">Failed to load top gainers</p>';
+            }
+            return;
+        }
+
+        const gainersContainer = document.getElementById('top-gainers');
+        if (!gainersContainer) return;
+        
+        gainersContainer.innerHTML = '';
+        
+        data.forEach(gainer => {
+            const gainerItem = document.createElement('a');
+            gainerItem.href = `/price/${gainer.symbol}`;
+            gainerItem.classList.add('card-item');
+            gainerItem.style.textDecoration = 'none';
+            gainerItem.style.color = 'inherit';
+            
+            const priceChange = gainer.priceChange?.priceChange7d || 0;
+            
+            gainerItem.innerHTML = `
+                <div style="display: flex; align-items: center;">
+                    <img src="https://s2.coinmarketcap.com/static/img/coins/64x64/${gainer.id}.png" 
+                         alt="${gainer.name}"
+                         onerror="this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%2230%22 height=%2230%22%3E%3Crect fill=%22%23ddd%22 width=%2230%22 height=%2230%22/%3E%3C/svg%3E'" 
+                         style="width: 30px; height: 30px; margin-right: 10px;">
+                    <span class="pair">${gainer.symbol}</span>
+                </div>
+                <span class="change up">+${priceChange.toFixed(2)}%</span>
+            `;
+            gainersContainer.appendChild(gainerItem);
+        });
+    }
+
+    // Initialize page data
+    document.addEventListener('DOMContentLoaded', function() {
+        fetchPopularCoins();
+        loadNewListings();
+        loadTopGainers();
+    });
+</script>
+
+<style>
+    /* Hero Section */
+    .hero {
+        width: 100%;
+        text-align: center;
+        padding: 4rem 1rem;
+        background: linear-gradient(135deg, #6d28d9, #4c1d95);
+        color: white;
+        border-radius: 10px;
+        margin: 0 auto;
+        box-sizing: border-box;
+    }
+
+    .hero h1 {
+        font-size: 3rem;
+        margin-bottom: 0.5rem;
+    }
+
+    .hero p {
+        font-size: 1.2rem;
+        margin-bottom: 2rem;
+    }
+
+    .timeframe-dropdown {
+        position: relative;
+        min-width: 200px;
+        margin-bottom: 1rem;
+        font-size: 1.2rem;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .timeframe-dropdown select {
+        width: 100%;
+        padding: 0.75rem 2.5rem 0.75rem 1rem;
+        font-size: 1rem;
+        font-weight: 500;
+        color: white;
+        background-color: #374151;
+        border: 2px solid #4B5563;
+        border-radius: 8px;
+        appearance: none;
+        cursor: pointer;
+        transition: all 0.2s ease;
+    }
+
+    .timeframe-dropdown::after {
+        content: '▼';
+        position: absolute;
+        right: 1rem;
+        top: 50%;
+        transform: translateY(-50%);
+        color: #9CA3AF;
+        pointer-events: none;
+        font-size: 0.8rem;
+    }
+
+    .timeframe-dropdown select:focus {
+        outline: none;
+        border-color: #6D28D9;
+        box-shadow: 0 0 0 2px rgba(109, 40, 217, 0.2);
+    }
+
+    .timeframe-dropdown select:hover {
+        border-color: #6B7280;
+        background-color: #4B5563;
+    }
+
+    .promo h2 {
+        font-size: 2rem;
+        margin-bottom: 1rem;
+        color: #fbbf24;
+    }
+
+    .promo p {
+        font-size: 1.5rem;
+        margin-bottom: 2rem;
+    }
+
+    .promo .btn {
+        font-size: 1.2rem;
+        padding: 1rem 2rem;
+        background-color: #fbbf24;
+        color: white;
+        border-radius: 50px;
+        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+        text-decoration: none;
+        transition: all 0.3s;
+    }
+
+    .promo .btn:hover {
+        background-color: #f59e0b;
+        transform: translateY(-2px);
+    }
+
+    /* Market Overview */
+    .market-overview {
+        display: flex;
+        flex-direction: column;
+        gap: 2rem;
+    }
+
+    /* Market Section - Hot Derivatives, Top Gainers, and New Listings */
+    .market-section {
+        display: flex;
+        gap: 2rem;
+        flex-direction: column;
+    }
+
+    /* Hot Derivatives */
+    .hot-derivatives {
+        width: 100%;
+        background-color: #1e293b;
+        color: white;
+        padding: 2rem;
+        border-radius: 10px;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+    }
+
+    .hot-derivatives h3 {
+        margin: 0;
+        text-align: left;
+    }
+
+    .timeframe-dropdown h3 {
+        font-size: 2rem;
+        margin-bottom: 1rem;
+        color: white;
+        text-align: center;
+    }
+
+    table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+
+    th, td {
+        padding: 1rem;
+        text-align: center;
+    }
+
+    th {
+        background-color: #1e293b;
+    }
+
+    td {
+        background-color: #2d3748;
+    }
+
+    .change.up {
+        color: #059669;
+    }
+
+    .change.down {
+        color: #dc2626;
+    }
+
+    .trade-btn {
+        padding: 0.5rem 1rem;
+        background-color: #667eea;
+        color: white;
+        border-radius: 8px;
+        text-decoration: none;
+        transition: all 0.3s;
+        display: inline-block;
+    }
+
+    .trade-btn:hover {
+        background-color: #5568d3;
+        transform: translateY(-2px);
+    }
+
+    /* Gainers and New Listings Side-by-Side */
+    .gainers-and-listings {
+        display: flex;
+        justify-content: space-between;
+        gap: 1rem;
+        width: 100%;
+    }
+
+    .gainers, .new-listings {
+        width: 48%;
+    }
+
+    .news-cards {
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+        padding: 1rem;
+        background-color: #1e293b;
+        border-radius: 10px;
+    }
+
+    .card {
+        background-color: #2d3748;
+        color: white;
+        padding: 1rem;
+        border-radius: 8px;
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+    }
+
+    .card-header {
+        font-size: 1.5rem;
+        text-align: center;
+        margin-bottom: 1rem;
+        color: white;
+    }
+
+    .card-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 0.5rem;
+        background-color: #2d3748;
+        border-radius: 8px;
+        transition: transform 0.3s, box-shadow 0.3s;
+    }
+
+    .card-item:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 6px 15px rgba(0, 0, 0, 0.2);
+    }
+
+    .pair {
+        font-weight: bold;
+    }
+
+    /* Responsive Design */
+    @media (max-width: 768px) {
+        .hero {
+            padding: 2rem 1rem;
+            font-size: 0.9rem;
+        }
+
+        .hero h1 {
+            font-size: 1.5rem;
+        }
+
+        .hero p {
+            font-size: 0.9rem;
+        }
+
+        .promo h2 {
+            font-size: 1.5rem;
+        }
+
+        .gainers-and-listings {
+            flex-direction: column;
+        }
+
+        .gainers, .new-listings {
+            width: 100%;
+        }
+
+        .hot-derivatives {
+            display: none;
+        }
+
+        .section-header {
+            flex-direction: column;
+            gap: 1rem;
+            align-items: flex-start;
+        }
+
+        .timeframe-dropdown {
+            width: 100%;
+        }
+    }
+
+    .hot-derivatives .trading-table table {
+        border-collapse: separate;
+        border-spacing: 0;
+        border-radius: 12px;
+        overflow: hidden;
+        background-color: #2d3748;
+        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
+    }
+
+    .hot-derivatives .trading-table tbody {
+        background-color: #2d3748;
+        border-radius: 12px;
+    }
+
+    .hot-derivatives .trading-table th,
+    .hot-derivatives .trading-table td {
+        padding: 1rem;
+        text-align: center;
+    }
+
+    .hot-derivatives .trading-table td:first-child {
+        border-top-left-radius: 12px;
+        border-bottom-left-radius: 12px;
+    }
+
+    .hot-derivatives .trading-table td:last-child {
+        border-top-right-radius: 12px;
+        border-bottom-right-radius: 12px;
+    }
+
+    .section-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 2rem;
+        padding: 0 1rem;
+    }
+
+    .section-header h3 {
+        margin: 0;
+        font-size: 2rem;
+        color: white;
+    }
+</style>
+
+{% endblock %}

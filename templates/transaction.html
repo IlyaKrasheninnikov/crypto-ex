@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Transaction Status</title>
+    <script src="https://cdn.jsdelivr.net/npm/web3@1.5.2/dist/web3.min.js"></script>
+</head>
+<body>
+    <div class="container">
+        <h1>Deposit Transaction</h1>
+
+        <div id="status-container">
+            <h3>Status: <span id="status">{{ transaction.status }}</span></h3>
+
+            <div id="pending-info" style="display: none;">
+                <p>Please send ETH to the following address:</p>
+                <div class="address-container">
+                    <code id="wallet-address">{{ transaction.wallet_address }}</code>
+                    <button onclick="copyAddress()">Copy</button>
+                </div>
+
+                <div class="timer-container">
+                    <p>Time remaining: <span id="timer">10:00</span></p>
+                    <div class="progress-bar">
+                        <div id="progress" style="width: 100%"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="completed-info" style="display: none;">
+                <p>Amount received: <span id="amount">0</span> ETH</p>
+                <p>Transaction hash: <span id="tx-hash"></span></p>
+            </div>
+
+            <div id="expired-info" style="display: none;">
+                <p>This deposit address has expired. Please create a new deposit request.</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const expiresAt = new Date("{{ expires_at }}");
+        const transactionId = {{ transaction.id }};
+
+        function updateTimer() {
+            const now = new Date();
+            const timeLeft = expiresAt - now;
+
+            if (timeLeft <= 0) {
+                document.getElementById('timer').textContent = '0:00';
+                return false;
+            }
+
+            const minutes = Math.floor(timeLeft / 60000);
+            const seconds = Math.floor((timeLeft % 60000) / 1000);
+            document.getElementById('timer').textContent =
+                `${minutes}:${seconds.toString().padStart(2, '0')}`;
+
+            const progressPercent = (timeLeft / (10 * 60000)) * 100;
+            document.getElementById('progress').style.width = `${progressPercent}%`;
+
+            return true;
+        }
+
+        function updateStatus() {
+            fetch(`/api/transaction/${transactionId}`)
+                .then(response => response.json())
+                .then(data => {
+                    document.getElementById('status').textContent = data.status;
+
+                    if (data.status === 'pending') {
+                        document.getElementById('pending-info').style.display = 'block';
+                        document.getElementById('completed-info').style.display = 'none';
+                        document.getElementById('expired-info').style.display = 'none';
+                    } else if (data.status === 'completed') {
+                        document.getElementById('pending-info').style.display = 'none';
+                        document.getElementById('completed-info').style.display = 'block';
+                        document.getElementById('expired-info').style.display = 'none';
+                        document.getElementById('amount').textContent = data.amount;
+                        document.getElementById('tx-hash').textContent = data.transaction_hash;
+                    } else if (data.status === 'expired') {
+                        document.getElementById('pending-info').style.display = 'none';
+                        document.getElementById('completed-info').style.display = 'none';
+                        document.getElementById('expired-info').style.display = 'block';
+                    }
+                });
+        }
+
+        function copyAddress() {
+            const address = document.getElementById('wallet-address').textContent;
+            navigator.clipboard.writeText(address)
+                .then(() => alert('Address copied to clipboard!'));
+        }
+
+        // Update timer every second
+        const timerInterval = setInterval(() => {
+            if (!updateTimer()) {
+                clearInterval(timerInterval);
+            }
+        }, 1000);
+
+        // Check status every 30 seconds
+        updateStatus();
+        setInterval(updateStatus, 30000);
+    </script>
+
+    <style>
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .address-container {
+            background: #f5f5f5;
+            padding: 10px;
+            border-radius: 4px;
+            margin: 10px 0;
+        }
+
+        .timer-container {
+            margin: 20px 0;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 20px;
+            background: #eee;
+            border-radius: 10px;
+            overflow: hidden;
+        }
+
+        #progress {
+            height: 100%;
+            background: #4CAF50;
+            transition: width 1s linear;
+        }
+    </style>
+</body>
+</html>

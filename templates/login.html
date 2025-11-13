@@ -1,0 +1,223 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="auth-container">
+    <div class="card auth-card">
+        <div class="auth-header">
+            <h2>Login to NexusCrypt</h2>
+            <p>Welcome back! Please enter your credentials.</p>
+        </div>
+
+        <form method="POST" class="auth-form" id="loginForm">
+            <div class="form-group">
+                <label for="email">Email Address or Username</label>
+                <input
+                    type="text"
+                    id="email"
+                    name="email"
+                    class="input"
+                    required
+                    autocomplete="email">
+            </div>
+
+            <div class="form-group">
+                <label for="password">Password</label>
+                <input
+                    type="password"
+                    id="password"
+                    name="password"
+                    class="input"
+                    required
+                    autocomplete="current-password">
+            </div>
+
+            <div class="auth-options">
+                <label class="remember-me">
+                    <input type="checkbox" name="remember">
+                    Remember me
+                </label>
+                <a href="#" class="forgot-password">Forgot Password?</a>
+            </div>
+
+            <button type="submit" class="btn auth-btn">
+                <span class="btn-text">Login</span>
+                <span class="btn-loader" style="display: none;">
+                    <span class="spinner"></span> Logging in...
+                </span>
+            </button>
+        </form>
+
+        <div class="auth-footer">
+            <p>Don't have an account? <a href="{{ url_for('register') }}">Register</a></p>
+        </div>
+    </div>
+</div>
+
+<style>
+.auth-container {
+    max-width: 400px;
+    margin: 2rem auto;
+    padding: 0 1rem;
+    position: relative;
+}
+
+.auth-card {
+    background-color: var(--background-light);
+    border-radius: 0.5rem;
+    padding: 2rem;
+}
+
+.auth-header {
+    text-align: center;
+    margin-bottom: 2rem;
+}
+
+.auth-header h2 {
+    font-size: 1.5rem;
+    margin-bottom: 0.5rem;
+}
+
+.auth-header p {
+    color: var(--text-secondary);
+}
+
+/* Form Styles */
+.auth-form .form-group {
+    margin-bottom: 1.5rem;
+}
+
+.auth-form label {
+    display: block;
+    margin-bottom: 0.5rem;
+    color: var(--text-primary);
+}
+
+.auth-form .input {
+    width: 100%;
+    padding: 0.75rem;
+    background-color: var(--background-dark);
+    border: 1px solid var(--text-secondary);
+    border-radius: 0.375rem;
+    color: var(--text-primary);
+    transition: border-color 0.3s;
+}
+
+.auth-form .input:focus {
+    border-color: var(--primary-color);
+    outline: none;
+}
+
+.auth-form .input.error {
+    border-color: #ef4444;
+}
+
+.auth-options {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+}
+
+.remember-me {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    cursor: pointer;
+}
+
+.forgot-password {
+    color: var(--primary-color);
+    text-decoration: none;
+    font-size: 0.875rem;
+}
+
+.forgot-password:hover {
+    text-decoration: underline;
+}
+
+.auth-btn {
+    width: 100%;
+    padding: 0.75rem;
+    font-size: 1rem;
+    font-weight: 500;
+    position: relative;
+}
+
+.auth-btn:disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
+}
+
+.btn-loader {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+}
+
+.spinner {
+    width: 16px;
+    height: 16px;
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    border-top-color: white;
+    border-radius: 50%;
+    animation: spin 0.6s linear infinite;
+}
+
+.auth-footer {
+    text-align: center;
+    margin-top: 1.5rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid var(--text-secondary);
+    color: var(--text-secondary);
+}
+
+.auth-footer a {
+    color: var(--primary-color);
+    text-decoration: none;
+}
+
+.auth-footer a:hover {
+    text-decoration: underline;
+}
+
+/* Animations */
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+/* Responsive */
+@media (max-width: 640px) {
+    .auth-container {
+        margin: 1rem auto;
+    }
+}
+</style>
+
+<script>
+// Handle form submission
+document.getElementById('loginForm').addEventListener('submit', function(e) {
+    const email = document.getElementById('email').value.trim();
+    const password = document.getElementById('password').value;
+
+    // Remove error class on valid input
+    document.getElementById('email').classList.remove('error');
+    document.getElementById('password').classList.remove('error');
+
+    // Show loading state
+    const btn = this.querySelector('.auth-btn');
+    const btnText = btn.querySelector('.btn-text');
+    const btnLoader = btn.querySelector('.btn-loader');
+
+    btnText.style.display = 'none';
+    btnLoader.style.display = 'flex';
+    btn.disabled = true;
+});
+
+// Remove error class on input
+document.querySelectorAll('.input').forEach(input => {
+    input.addEventListener('input', function() {
+        this.classList.remove('error');
+    });
+});
+</script>
+{% endblock %}

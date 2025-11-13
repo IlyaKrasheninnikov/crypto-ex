@@ -1,0 +1,947 @@
+{% extends "base.html" %}
+
+{% block content %}
+<style>
+    /* Wallet Page Styling - Matching Platform Theme */
+    .wallet-page {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 1rem;
+    }
+
+    .page-header {
+        text-align: center;
+        margin-bottom: 2rem;
+    }
+
+    .page-header h1 {
+        font-size: 2.25rem;
+        margin-bottom: 0.5rem;
+        color: var(--text-primary);
+    }
+
+    .network-badge {
+        background: var(--primary-color);
+        color: white;
+        padding: 0.45rem 1rem;
+        border-radius: 1rem;
+        font-size: 0.9rem;
+        font-weight: 600;
+        display: inline-block;
+        user-select: none;
+    }
+
+    .wallet-grid {
+        margin-top: 1.5rem;
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+        gap: 1.5rem;
+        margin-bottom: 2rem;
+    }
+
+    .wallet-card {
+        background-color: var(--background-light);
+        border-radius: 0.75rem;
+        padding: 1.5rem;
+        box-shadow: 0 2px 12px rgba(0, 0, 0, 0.1);
+        transition: transform 0.25s ease, box-shadow 0.25s ease;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .wallet-card:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+    }
+
+    .card-header {
+        display: flex;
+        align-items: center;
+        gap: 0.8rem;
+        margin-bottom: 1rem;
+        padding-bottom: 1rem;
+        border-bottom: 1px solid rgba(148, 163, 184, 0.3);
+        user-select: none;
+    }
+
+    .card-header h3 {
+        font-size: 1.3rem;
+        color: var(--text-primary);
+        margin: 0;
+        font-weight: 700;
+    }
+
+    .card-icon {
+        font-size: 1.75rem;
+        line-height: 1;
+    }
+
+    .address-container {
+        background-color: var(--background-dark);
+        padding: 1rem 1.2rem;
+        border-radius: 0.5rem;
+        border: 1.5px solid var(--primary-color);
+        margin: 1rem 0;
+        word-break: break-word;
+        font-family: 'Courier New', monospace;
+        font-size: 0.9rem;
+        color: var(--text-primary);
+        user-select: text;
+    }
+
+    .address-label {
+        font-size: 0.9rem;
+        color: var(--text-secondary);
+        margin-bottom: 0.5rem;
+        font-weight: 600;
+    }
+
+    .copy-btn {
+        background-color: var(--primary-color);
+        color: white;
+        border: none;
+        padding: 0.45rem 1rem;
+        border-radius: 0.5rem;
+        cursor: pointer;
+        font-size: 0.9rem;
+        transition: background-color 0.3s ease, transform 0.2s ease;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.4rem;
+        user-select: none;
+    }
+
+    .copy-btn:hover {
+        background-color: var(--secondary-color);
+        transform: translateY(-1px);
+    }
+
+    .balance-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+        gap: 1rem;
+        margin-top: 1rem;
+        user-select: none;
+    }
+
+    .balance-item {
+        background-color: var(--background-dark);
+        padding: 1rem;
+        border-radius: 0.5rem;
+        text-align: center;
+        border: 1px solid rgba(148, 163, 184, 0.25);
+    }
+
+    .balance-label {
+        font-size: 0.875rem;
+        color: var(--text-secondary);
+        margin-bottom: 0.3rem;
+        font-weight: 600;
+    }
+
+    .balance-value {
+        font-size: 1.6rem;
+        font-weight: 700;
+        color: var(--primary-color);
+        letter-spacing: 0.04em;
+    }
+
+    .balance-crypto {
+        font-size: 0.75rem;
+        color: var(--text-secondary);
+        margin-top: 0.3rem;
+        font-weight: 500;
+    }
+
+    .refresh-btn {
+        background-color: var(--success-color);
+        color: white;
+        border: none;
+        padding: 0.75rem 1.5rem;
+        border-radius: 0.5rem;
+        cursor: pointer;
+        font-weight: 700;
+        transition: background-color 0.3s ease;
+        margin-bottom: 1.2rem;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.6rem;
+        user-select: none;
+    }
+
+    .refresh-btn:hover {
+        background-color: #059669;
+    }
+
+    .form-group {
+        margin-bottom: 1rem;
+    }
+
+    .form-label {
+        display: block;
+        font-size: 0.9rem;
+        font-weight: 600;
+        color: var(--text-primary);
+        margin-bottom: 0.5rem;
+        user-select: none;
+    }
+
+    .form-control {
+        width: 100%;
+        padding: 0.7rem 1rem;
+        background-color: var(--background-dark);
+        border: 1.5px solid rgba(148, 163, 184, 0.35);
+        border-radius: 0.5rem;
+        color: var(--text-primary);
+        font-size: 0.9rem;
+        transition: border-color 0.3s ease, box-shadow 0.3s ease;
+        font-weight: 500;
+    }
+
+    .form-control:focus {
+        outline: none;
+        border-color: var(--primary-color);
+        box-shadow: 0 0 6px rgba(109, 40, 217, 0.25);
+    }
+
+    .warning-box {
+        background-color: rgba(245, 158, 11, 0.12);
+        border: 1.5px solid rgba(245, 158, 11, 0.38);
+        border-radius: 0.5rem;
+        padding: 1rem 1.2rem;
+        margin: 1rem 0;
+        font-weight: 500;
+        color: #b45309;
+        user-select: none;
+    }
+
+    .warning-box strong {
+       font-weight: 700;
+       color: #f59e0b;
+    }
+
+    .warning-box ul {
+        margin: 0.5rem 0 0 1.5rem;
+        color: var(--text-secondary);
+    }
+
+    .info-box {
+        background-color: rgba(59, 130, 246, 0.13);
+        border: 1.5px solid rgba(59, 130, 246, 0.38);
+        border-radius: 0.5rem;
+        padding: 1rem 1.2rem;
+        margin: 1rem 0;
+        color: var(--text-secondary);
+        user-select: none;
+    }
+
+    .success-box {
+        background-color: rgba(5, 150, 105, 0.13);
+        border: 1.5px solid rgba(5, 150, 105, 0.38);
+        border-radius: 0.5rem;
+        padding: 1rem 1.2rem;
+        margin: 1rem 0;
+        color: var(--success-color);
+        user-select: none;
+    }
+
+    .btn-primary, .btn-warning, .btn-success {
+        color: white;
+        border: none;
+        padding: 0.75rem 1.25rem;
+        border-radius: 0.5rem;
+        cursor: pointer;
+        font-weight: 700;
+        transition: all 0.25s ease;
+        width: 100%;
+        margin-top: 1rem;
+        user-select: none;
+    }
+
+    .btn-primary {
+        background-color: var(--primary-color);
+    }
+
+    .btn-primary:hover:not(:disabled) {
+        background-color: var(--secondary-color);
+        transform: translateY(-2px);
+    }
+
+    .btn-primary:disabled {
+        opacity: 0.55;
+        cursor: not-allowed;
+    }
+
+    .btn-warning {
+        background-color: #f59e0b;
+    }
+
+    .btn-warning:hover:not(:disabled) {
+        background-color: #d97706;
+        transform: translateY(-2px);
+    }
+
+    .btn-warning:disabled {
+        opacity: 0.55;
+        cursor: not-allowed;
+    }
+
+    .btn-success {
+        background-color: var(--success-color);
+    }
+
+    .btn-success:hover:not(:disabled) {
+        background-color: #059669;
+        transform: translateY(-2px);
+    }
+
+    .btn-success:disabled {
+        opacity: 0.55;
+        cursor: not-allowed;
+    }
+
+    .message {
+        padding: 1rem;
+        border-radius: 0.5rem;
+        margin-bottom: 1rem;
+        display: none;
+        user-select: none;
+    }
+
+    .message.show {
+        display: block;
+    }
+
+    .error-message {
+        background-color: rgba(239, 68, 68, 0.12);
+        border: 1.5px solid rgba(239, 68, 68, 0.4);
+        color: #ef4444;
+    }
+
+    .success-message {
+        background-color: rgba(5, 150, 105, 0.12);
+        border: 1.5px solid rgba(5, 150, 105, 0.38);
+        color: var(--success-color);
+    }
+
+    .transaction-table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 1rem;
+        font-feature-settings: "tnum", "lnum";
+        font-variant-numeric: tabular-nums;
+    }
+
+    .transaction-table th {
+        background-color: var(--background-dark);
+        padding: 0.75rem 1rem;
+        text-align: left;
+        font-weight: 600;
+        color: var(--text-secondary);
+        font-size: 0.875rem;
+        border-bottom: 1.5px solid rgba(148, 163, 184, 0.25);
+        white-space: nowrap;
+    }
+
+    .transaction-table td {
+        padding: 0.75rem 1rem;
+        border-bottom: 1px solid rgba(148, 163, 184, 0.12);
+        color: var(--text-primary);
+        font-size: 0.9rem;
+        vertical-align: middle;
+        white-space: nowrap;
+    }
+
+    .transaction-table tr:hover {
+        background-color: rgba(109, 40, 217, 0.07);
+    }
+
+    .status-badge {
+        padding: 0.3rem 0.8rem;
+        border-radius: 1rem;
+        font-size: 0.75rem;
+        font-weight: 700;
+        user-select: none;
+    }
+
+    .status-completed {
+        background-color: rgba(5, 150, 105, 0.22);
+        color: var(--success-color);
+    }
+
+    .status-pending {
+        background-color: rgba(245, 158, 11, 0.25);
+        color: #f59e0b;
+    }
+
+    .empty-state {
+        text-align: center;
+        padding: 3rem 1rem;
+        color: var(--text-secondary);
+        user-select: none;
+    }
+
+    .empty-state-icon {
+        font-size: 3.5rem;
+        margin-bottom: 1rem;
+        opacity: 0.5;
+    }
+
+    .deposit-instructions {
+        background-color: var(--background-dark);
+        padding: 1rem 1.2rem;
+        border-radius: 0.5rem;
+        margin-top: 1rem;
+        color: var(--text-secondary);
+        font-size: 0.9rem;
+        user-select: none;
+    }
+
+    .deposit-instructions ol {
+        margin: 0.5rem 0 0 1.8rem;
+    }
+
+    .deposit-instructions li {
+        margin-bottom: 0.45rem;
+        line-height: 1.3;
+    }
+
+    .deposit-instructions a {
+        color: var(--primary-color);
+        text-decoration: none;
+        font-weight: 600;
+    }
+
+    .deposit-instructions a:hover {
+        text-decoration: underline;
+    }
+
+    @media (max-width: 768px) {
+        .wallet-grid {
+            grid-template-columns: 1fr !important;
+        }
+
+        .balance-grid {
+            grid-template-columns: 1fr !important;
+        }
+    }
+</style>
+
+<div class="wallet-page">
+    <div class="page-header">
+        <h1>💰 Wallet</h1>
+        <span class="network-badge">{{ config.NETWORK_NAME or 'Sepolia Testnet' }}</span>
+    </div>
+
+    {% if current_user.is_authenticated %}
+
+    <!-- Wallet Information -->
+    <div class="wallet-card">
+        <div class="card-header">
+            <span class="card-icon" aria-label="Wallet Icon">📱</span>
+            <h3>Wallet Information</h3>
+        </div>
+
+        <div class="address-container" aria-live="polite" aria-atomic="true">
+            <div class="address-label">Your Wallet Address</div>
+            <div class="address-box" id="wallet-address">Loading...</div>
+            <button type="button" class="copy-btn" onclick="copyAddress()" aria-label="Copy wallet address to clipboard">
+                📋 Copy Address
+            </button>
+        </div>
+
+        <div class="warning-box" role="alert">
+            <strong>⚠️ Security Notice:</strong>
+            <ul>
+                <li>Never share your private key with anyone</li>
+                <li>This is a testnet wallet - do not send real funds</li>
+                <li>Keep your credentials secure</li>
+            </ul>
+        </div>
+    </div>
+
+    <!-- Account Balances -->
+    <div class="wallet-card" role="region" aria-label="Account balances" style="margin-top: 2rem;">
+        <div class="card-header">
+            <span class="card-icon" aria-label="Money icon">💵</span>
+            <h3>Account Balances</h3>
+        </div>
+
+        <button type="button" class="refresh-btn" onclick="loadBalances()" aria-live="polite" aria-atomic="true" aria-label="Refresh wallet balances">
+            🔄 Refresh Balances
+        </button>
+
+        <div id="balance-error" class="error-message message" role="alert" aria-live="assertive"></div>
+        <div id="balance-success" class="success-message message" aria-live="polite"></div>
+
+        <div class="balance-grid" tabindex="0">
+            <div class="balance-item">
+                <div class="balance-label">ETH Balance</div>
+                <div class="balance-value" id="eth-balance">0.00000</div>
+                <div class="balance-crypto">Ethereum</div>
+            </div>
+            <div class="balance-item">
+                <div class="balance-label">USDT Balance</div>
+                <div class="balance-value" id="usdt-balance">0.00</div>
+                <div class="balance-crypto">Tether USD</div>
+            </div>
+            <div class="balance-item">
+                <div class="balance-label">BTC Balance</div>
+                <div class="balance-value" id="btc-balance">0.00000</div>
+                <div class="balance-crypto">Bitcoin</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="wallet-grid">
+        <!-- Deposit Section -->
+        <section class="wallet-card" aria-labelledby="deposit-section-title" role="region">
+            <div class="card-header">
+                <span class="card-icon" aria-label="Deposit icon">📥</span>
+                <h3 id="deposit-section-title">Deposit Funds</h3>
+            </div>
+
+            <div class="deposit-instructions">
+                <strong>How to deposit:</strong>
+                <ol>
+                    <li>Get testnet tokens from a <a href="https://sepoliafaucet.com" target="_blank" rel="noopener noreferrer">faucet</a></li>
+                    <li>Send tokens to your wallet address above</li>
+                    <li>Wait for blockchain confirmation</li>
+                    <li>Refresh your balance</li>
+                </ol>
+            </div>
+
+            <div class="info-box" role="note">
+                <strong>ℹ️ Note:</strong> This is a testnet environment. Only send testnet tokens, not real cryptocurrency.
+            </div>
+
+            <button type="button" class="btn-primary" onclick="showDepositInfo()" aria-expanded="false" aria-controls="deposit-instructions">
+                Show Deposit Address
+            </button>
+
+            <div id="deposit-instructions" class="address-container" style="display: none; margin-top: 1rem;" aria-live="polite" aria-atomic="true" tabindex="0">
+                <div class="address-label">Send to this address:</div>
+                <div class="address-box" id="deposit-address"></div>
+                <button type="button" class="copy-btn" onclick="copyDepositAddress()" aria-label="Copy deposit address to clipboard">📋 Copy</button>
+            </div>
+        </section>
+
+        <!-- Internal Transfer Section -->
+        <section class="wallet-card" aria-labelledby="transfer-section-title" role="region">
+            <div class="card-header">
+                <span class="card-icon" aria-label="Transfer icon">🔄</span>
+                <h3 id="transfer-section-title">Internal Transfer</h3>
+            </div>
+
+            <div id="transfer-error" class="error-message message" role="alert" aria-live="assertive"></div>
+            <div id="transfer-success" class="success-message message" aria-live="polite"></div>
+
+            <form onsubmit="event.preventDefault(); transferFunds();">
+                <div class="form-group">
+                    <label class="form-label" for="transfer-email">Recipient Email</label>
+                    <input type="email" id="transfer-email" placeholder="recipient@example.com" class="form-control" aria-required="true" autocomplete="off" />
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" for="transfer-token">Select Token</label>
+                    <select id="transfer-token" class="form-control" aria-required="true">
+                        <option value="ETH">ETH - Ethereum</option>
+                        <option value="USDT">USDT - Tether USD</option>
+                        <option value="BTC">BTC - Bitcoin</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" for="transfer-amount">Amount</label>
+                    <input type="number" id="transfer-amount" placeholder="0.00" min="0.0001" step="0.0001" class="form-control" aria-required="true" />
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" for="transfer-memo">Memo (Optional)</label>
+                    <input type="text" id="transfer-memo" placeholder="Payment for services" class="form-control" maxlength="100" />
+                </div>
+
+                <div class="success-box" role="note">
+                    <strong>✅ Instant & Free:</strong> Internal transfers are processed instantly with zero fees.
+                </div>
+
+                <button type="submit" class="btn-success" id="transfer-btn" aria-live="polite" aria-atomic="true">
+                    🔄 Transfer Funds
+                </button>
+            </form>
+        </section>
+
+        <!-- Withdraw Section -->
+        <section class="wallet-card" aria-labelledby="withdraw-section-title" role="region">
+            <div class="card-header">
+                <span class="card-icon" aria-label="Withdraw icon">📤</span>
+                <h3 id="withdraw-section-title">Withdraw Funds</h3>
+            </div>
+
+            <div id="withdraw-error" class="error-message message" role="alert" aria-live="assertive"></div>
+            <div id="withdraw-success" class="success-message message" aria-live="polite"></div>
+
+            <form onsubmit="event.preventDefault(); withdrawFunds();">
+                <div class="form-group">
+                    <label class="form-label" for="withdraw-token">Select Token</label>
+                    <select id="withdraw-token" class="form-control" aria-required="true">
+                        <option value="ETH">ETH - Ethereum</option>
+                        <option value="USDT">USDT - Tether USD</option>
+                        <option value="BTC">BTC - Bitcoin</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" for="withdraw-address">Recipient Address</label>
+                    <input type="text" id="withdraw-address" placeholder="0x..." class="form-control" aria-required="true" autocomplete="off" spellcheck="false" />
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" for="withdraw-amount">Amount</label>
+                    <input type="number" id="withdraw-amount" placeholder="0.00" min="0.0001" step="0.0001" class="form-control" aria-required="true" />
+                </div>
+
+                <div class="warning-box" role="alert">
+                    <strong>⚠️ Warning:</strong> Double-check the recipient address. Transactions cannot be reversed.
+                </div>
+
+                <button type="submit" class="btn-warning" id="withdraw-btn" aria-live="polite" aria-atomic="true">
+                    💸 Withdraw Funds
+                </button>
+            </form>
+        </section>
+    </div>
+
+    <!-- Transaction History -->
+    <div class="wallet-card" role="region" aria-labelledby="transaction-history-title" tabindex="0">
+        <div class="card-header">
+            <span class="card-icon" aria-label="Transaction history icon">📜</span>
+            <h3 id="transaction-history-title">Transaction History</h3>
+        </div>
+        <div id="transaction-history" aria-live="polite" aria-relevant="additions removals">
+            <div class="empty-state">
+                <div class="empty-state-icon" aria-hidden="true">📊</div>
+                <p>Loading transaction history...</p>
+            </div>
+        </div>
+    </div>
+
+    {% else %}
+    <div class="wallet-card" role="alert">
+        <div class="empty-state">
+            <div class="empty-state-icon">🔒</div>
+            <h3>Authentication Required</h3>
+            <p>Please log in to access your wallet.</p>
+            <a href="{{ url_for('login') }}" role="button" class="btn-primary" style="max-width: 200px; margin: 1rem auto; display: block;">Login</a>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<script>
+    // ==================== AUTHENTICATION FIX ====================
+    {% if current_user.is_authenticated %}
+    const USER_ID = {{ current_user.id }};
+    {% else %}
+    const USER_ID = null;
+    {% endif %}
+
+    function getAuthHeaders() {
+        const headers = {'Content-Type': 'application/json'};
+        if (USER_ID) headers['X-User-ID'] = USER_ID.toString();
+        return headers;
+    }
+    // ==================== END AUTHENTICATION FIX ====================
+
+    let userAddress = null;
+
+    window.addEventListener('load', async () => {
+        {% if current_user.is_authenticated %}
+        await loadWalletInfo();
+        await loadBalances();
+        await loadTransactionHistory();
+        {% endif %}
+    });
+
+    async function loadWalletInfo() {
+        try {
+            const response = await fetch('/api/wallet/info', {headers: getAuthHeaders()});
+            const data = await response.json();
+            if (response.ok && data.ethereum_address) {
+                userAddress = data.ethereum_address;
+                document.getElementById('wallet-address').textContent = userAddress;
+            } else {
+                console.log('Wallet info not available yet.');
+            }
+        } catch (error) {
+            console.error('Error loading wallet:', error);
+            showBalanceError('Failed to load wallet information');
+        }
+    }
+
+    async function loadBalances() {
+        try {
+            const response = await fetch('/api/wallet/balances', {headers: getAuthHeaders()});
+            const data = await response.json();
+            if (response.ok && data.balances) {
+                document.getElementById('eth-balance').textContent = parseFloat(data.balances.ETH?.balance || 0).toFixed(5);
+                document.getElementById('usdt-balance').textContent = parseFloat(data.balances.USDT?.balance || 0).toFixed(2);
+                document.getElementById('btc-balance').textContent = parseFloat(data.balances.BTC?.balance || 0).toFixed(5);
+                showBalanceSuccess('Balances updated');
+                setTimeout(() => hideBalanceMessages(), 2000);
+            } else {
+                showBalanceError(data.error || 'Failed to load balances');
+            }
+        } catch (error) {
+            console.error('Error loading balances:', error);
+            showBalanceError('Error loading balances: ' + error.message);
+        }
+    }
+
+    async function transferFunds() {
+        if (!userAddress) {
+            showTransferError('Wallet not loaded. Please refresh the page.');
+            return;
+        }
+
+        const toEmail = document.getElementById('transfer-email').value.trim();
+        const amount = document.getElementById('transfer-amount').value;
+        const token = document.getElementById('transfer-token').value;
+        const memo = document.getElementById('transfer-memo').value.trim();
+
+        if (!toEmail || !amount || parseFloat(amount) <= 0) {
+            showTransferError('Please fill in all required fields with valid values.');
+            return;
+        }
+
+        // Basic email validation
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(toEmail)) {
+            showTransferError('Please enter a valid email address.');
+            return;
+        }
+
+        const btn = document.getElementById('transfer-btn');
+        btn.disabled = true;
+        btn.textContent = 'Processing...';
+
+        try {
+            const response = await fetch('/api/wallet/transfer', {
+                method: 'POST',
+                headers: getAuthHeaders(),
+                body: JSON.stringify({
+                    to_email: toEmail,
+                    amount: parseFloat(amount),
+                    currency: token,
+                    memo: memo || undefined
+                })
+            });
+            const data = await response.json();
+
+            if (data.success) {
+                showTransferSuccess(`Transfer successful! Transfer ID: ${data.transfer_id}`);
+                // Clear form
+                document.getElementById('transfer-email').value = '';
+                document.getElementById('transfer-amount').value = '';
+                document.getElementById('transfer-memo').value = '';
+                // Reload balances
+                setTimeout(() => loadBalances(), 1000);
+                // Reload transaction history
+                setTimeout(() => loadTransactionHistory(), 1500);
+            } else {
+                showTransferError(data.error || 'Transfer failed. Please try again.');
+            }
+        } catch (error) {
+            console.error('Transfer error:', error);
+            showTransferError('Error processing transfer. Please try again.');
+        } finally {
+            btn.disabled = false;
+            btn.textContent = '🔄 Transfer Funds';
+        }
+    }
+
+    function showDepositInfo() {
+        if (!userAddress) {
+            showBalanceError('Wallet not loaded yet. Please wait.');
+            return;
+        }
+        document.getElementById('deposit-address').textContent = userAddress;
+        document.getElementById('deposit-instructions').style.display = 'block';
+    }
+
+    async function withdrawFunds() {
+        if (!userAddress) {
+            showWithdrawError('Wallet not loaded. Please refresh the page.');
+            return;
+        }
+        const toAddress = document.getElementById('withdraw-address').value.trim();
+        const amount = document.getElementById('withdraw-amount').value;
+        const token = document.getElementById('withdraw-token').value;
+
+        if (!toAddress || !amount || parseFloat(amount) <= 0) {
+            showWithdrawError('Please fill in all fields with valid values.');
+            return;
+        }
+        if (!toAddress.match(/^0x[a-fA-F0-9]{40}$/)) {
+            showWithdrawError('Invalid Ethereum address format.');
+            return;
+        }
+
+        const btn = document.getElementById('withdraw-btn');
+        btn.disabled = true;
+        btn.textContent = 'Processing...';
+
+        try {
+            const response = await fetch('/api/wallet/withdraw', {
+                method: 'POST',
+                headers: getAuthHeaders(),
+                body: JSON.stringify({
+                    to_address: toAddress,
+                    amount: parseFloat(amount),
+                    token: token
+                })
+            });
+            const data = await response.json();
+            if (data.success) {
+                showWithdrawSuccess(`Withdrawal successful! TX: ${data.tx_hash || 'pending'}`);
+                document.getElementById('withdraw-address').value = '';
+                document.getElementById('withdraw-amount').value = '';
+                setTimeout(() => loadBalances(), 2000);
+            } else {
+                showWithdrawError(data.error || 'Withdrawal failed.');
+            }
+        } catch (error) {
+            console.error('Withdrawal error:', error);
+            showWithdrawError('Error processing withdrawal.');
+        } finally {
+            btn.disabled = false;
+            btn.textContent = '💸 Withdraw Funds';
+        }
+    }
+
+    async function loadTransactionHistory() {
+        try {
+            const response = await fetch('/api/wallet/transactions', {headers: getAuthHeaders()});
+            const data = await response.json();
+            const historyDiv = document.getElementById('transaction-history');
+
+            if (response.ok && data.transactions && data.transactions.length > 0) {
+                let html = '<table class="transaction-table">';
+                html += '<thead><tr><th>Type</th><th>Amount</th><th>Token</th><th>Date</th><th>Status</th></tr></thead><tbody>';
+
+                data.transactions.slice(0, 10).forEach(tx => {
+                    const date = new Date(tx.created_at || tx.timestamp).toLocaleString();
+                    const statusClass = tx.status === 'completed' ? 'status-completed' : 'status-pending';
+                    const type = tx.tx_type || tx.type;
+                    const typeIcon = type.includes('transfer') ? '🔄' :
+                                   type.includes('deposit') ? '📥' :
+                                   type.includes('withdrawal') ? '📤' : '💸';
+
+                    html += '<tr>';
+                    html += `<td>${typeIcon} ${type}</td>`;
+                    html += `<td>${tx.amount}</td>`;
+                    html += `<td>${tx.currency || tx.token}</td>`;
+                    html += `<td>${date}</td>`;
+                    html += `<td><span class="status-badge ${statusClass}">${tx.status}</span></td>`;
+                    html += '</tr>';
+                });
+
+                html += '</tbody></table>';
+                historyDiv.innerHTML = html;
+            } else {
+                historyDiv.innerHTML = '<div class="empty-state"><div class="empty-state-icon">📊</div><p>No transactions yet</p></div>';
+            }
+
+        } catch (error) {
+            console.error('Error loading transactions:', error);
+            document.getElementById('transaction-history').innerHTML = '<div class="empty-state"><div class="empty-state-icon">❌</div><p>Failed to load transactions</p></div>';
+        }
+    }
+
+    function copyAddress() {
+        const address = document.getElementById('wallet-address').textContent;
+        if (!address || address === 'Loading...') {
+            showBalanceError('Wallet address not loaded yet.');
+            return;
+        }
+        navigator.clipboard.writeText(address).then(() => {
+            showBalanceSuccess('Address copied to clipboard!');
+            setTimeout(() => hideBalanceMessages(), 2000);
+        }).catch(err => {
+            console.error('Copy failed:', err);
+            showBalanceError('Failed to copy address');
+        });
+    }
+
+    function copyDepositAddress() {
+        const address = document.getElementById('deposit-address').textContent;
+        navigator.clipboard.writeText(address).then(() => {
+            showBalanceSuccess('Deposit address copied!');
+            setTimeout(() => hideBalanceMessages(), 2000);
+        }).catch(err => {
+            console.error('Copy failed:', err);
+            showBalanceError('Failed to copy address');
+        });
+    }
+
+    function showBalanceError(message) {
+        const errorDiv = document.getElementById('balance-error');
+        if (errorDiv) {
+            errorDiv.textContent = message;
+            errorDiv.classList.add('show');
+            setTimeout(() => { errorDiv.classList.remove('show'); }, 5000);
+        }
+    }
+
+    function showBalanceSuccess(message) {
+        const successDiv = document.getElementById('balance-success');
+        if (successDiv) {
+            successDiv.textContent = message;
+            successDiv.classList.add('show');
+        }
+    }
+
+    function showTransferError(message) {
+        const errorDiv = document.getElementById('transfer-error');
+        if (errorDiv) {
+            errorDiv.textContent = message;
+            errorDiv.classList.add('show');
+            setTimeout(() => { errorDiv.classList.remove('show'); }, 5000);
+        }
+    }
+
+    function showTransferSuccess(message) {
+        const successDiv = document.getElementById('transfer-success');
+        if (successDiv) {
+            successDiv.textContent = message;
+            successDiv.classList.add('show');
+            setTimeout(() => { successDiv.classList.remove('show'); }, 5000);
+        }
+    }
+
+    function showWithdrawError(message) {
+        const errorDiv = document.getElementById('withdraw-error');
+        if (errorDiv) {
+            errorDiv.textContent = message;
+            errorDiv.classList.add('show');
+            setTimeout(() => { errorDiv.classList.remove('show'); }, 5000);
+        }
+    }
+
+    function showWithdrawSuccess(message) {
+        const successDiv = document.getElementById('withdraw-success');
+        if (successDiv) {
+            successDiv.textContent = message;
+            successDiv.classList.add('show');
+            setTimeout(() => { successDiv.classList.remove('show'); }, 5000);
+        }
+    }
+
+    function hideBalanceMessages() {
+        const errorDiv = document.getElementById('balance-error');
+        const successDiv = document.getElementById('balance-success');
+        if (errorDiv) errorDiv.classList.remove('show');
+        if (successDiv) successDiv.classList.remove('show');
+    }
+</script>
+{% endblock %}

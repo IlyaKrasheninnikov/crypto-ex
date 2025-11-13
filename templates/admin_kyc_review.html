@@ -1,0 +1,548 @@
+{% extends "base.html" %}
+
+{% block content %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>KYC Review - Admin Panel</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet" />
+    <style>
+        :root {
+            --primary-color: #667eea;
+            --danger-color: #ef4444;
+            --success-color: #10b981;
+            --dark-bg: #1a1d29;
+            --card-bg: #252831;
+            --border-color: #2d3748;
+            --text-primary: #ffffff;
+            --text-secondary: #a0aec0;
+        }
+
+        body {
+            background: var(--dark-bg);
+            color: var(--text-primary);
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            padding: 20px;
+        }
+
+        .admin-header {
+            background: var(--card-bg);
+            padding: 20px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .kyc-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
+            gap: 20px;
+        }
+
+        .kyc-card {
+            background: var(--card-bg);
+            border-radius: 12px;
+            padding: 20px;
+            border: 1px solid var(--border-color);
+        }
+
+        .kyc-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .kyc-status {
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .kyc-status.pending {
+            background: rgba(245, 158, 11, 0.2);
+            color: #f59e0b;
+        }
+
+        .kyc-info-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .kyc-documents {
+            margin: 15px 0;
+        }
+
+        .document-preview {
+            display: inline-block;
+            width: 100px;
+            height: 100px;
+            border-radius: 8px;
+            margin-right: 10px;
+            object-fit: cover;
+            border: 2px solid var(--border-color);
+            cursor: pointer;
+        }
+
+        .kyc-actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        .btn {
+            flex: 1;
+            padding: 12px;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .btn-approve {
+            background: var(--success-color);
+            color: white;
+        }
+
+        .btn-approve:hover {
+            background: #059669;
+        }
+
+        .btn-reject {
+            background: var(--danger-color);
+            color: white;
+        }
+
+        .btn-reject:hover {
+            background: #dc2626;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal.show {
+            display: flex;
+        }
+
+        .modal-content {
+            background: var(--card-bg);
+            padding: 30px;
+            border-radius: 12px;
+            max-width: 500px;
+            width: 90%;
+        }
+
+        .modal-header {
+            font-size: 20px;
+            font-weight: 600;
+            margin-bottom: 20px;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        .form-label {
+            display: block;
+            color: var(--text-secondary);
+            margin-bottom: 8px;
+            font-size: 14px;
+        }
+
+        .form-control {
+            width: 100%;
+            padding: 12px;
+            background: var(--dark-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            color: var(--text-primary);
+            font-size: 14px;
+        }
+
+        textarea.form-control {
+            resize: vertical;
+            min-height: 100px;
+        }
+
+        /* Photo gallery & modal styling */
+        .kyc-photo-gallery {
+            position: relative;
+            width: 100%;
+            height: 280px;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .photo-arrow {
+            position: absolute;
+            background: var(--border-color);
+            border: none;
+            color: var(--text-primary);
+            font-size: 24px;
+            cursor: pointer;
+            padding: 6px 12px;
+            border-radius: 12px;
+            user-select: none;
+            z-index: 10;
+            transition: background 0.3s;
+        }
+
+        .photo-arrow:hover {
+            background: var(--primary-color);
+        }
+
+        .photo-arrow.left {
+            left: 0;
+        }
+
+        .photo-arrow.right {
+            right: 0;
+        }
+
+        .photo-current {
+            max-width: calc(100% - 100px);
+            max-height: 260px;
+            border-radius: 12px;
+            cursor: pointer;
+            object-fit: contain;
+            border: 2px solid var(--border-color);
+        }
+
+        .modal#photoModal {
+            display: none;
+            position: fixed;
+            background: rgba(0, 0, 0, 0.9);
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            justify-content: center;
+            align-items: center;
+            z-index: 1100;
+        }
+
+        .modal#photoModal.show {
+            display: flex;
+        }
+    </style>
+</head>
+<body>
+    <div class="admin-header">
+        <h1><i class="fas fa-shield-alt"></i> KYC Review Panel</h1>
+        <div>
+            <span style="color: var(--text-secondary);">Pending: <strong id="pendingCount">0</strong></span>
+            <button onclick="location.reload()" class="btn" style="margin-left: 15px; padding: 8px 16px; background: var(--primary-color); color: white;">
+                <i class="fas fa-sync-alt"></i> Refresh
+            </button>
+        </div>
+    </div>
+
+    <div class="kyc-grid" id="kycGrid">
+        <div style="text-align: center; padding: 40px; grid-column: 1 / -1; color: var(--text-secondary);">
+            <i class="fas fa-spinner fa-spin" style="font-size: 48px; margin-bottom: 20px;"></i>
+            <p>Loading KYC submissions...</p>
+        </div>
+    </div>
+
+    <!-- Reject Modal -->
+    <div class="modal" id="rejectModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <i class="fas fa-times-circle" style="color: var(--danger-color);"></i> Reject KYC
+            </div>
+            <div class="form-group">
+                <label class="form-label">Rejection Reason:</label>
+                <textarea class="form-control" id="rejectionReason" placeholder="Enter reason for rejection..."></textarea>
+            </div>
+            <div style="display: flex; gap: 10px;">
+                <button class="btn" style="background: var(--border-color); color: white;" onclick="closeRejectModal()">Cancel</button>
+                <button class="btn btn-reject" onclick="confirmReject()">Confirm Rejection</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Photo modal for full size -->
+    <div class="modal" id="photoModal" onclick="closePhotoModal()">
+        <img
+            id="photoModalImg"
+            src=""
+            alt="Full size photo"
+            style="max-width: 90%; max-height: 90%; border-radius: 12px;"
+        />
+    </div>
+
+    <script>
+        let currentKYCId = null;
+        window.kycPhotos = {};
+        let currentPhotoIndex = {};
+
+        document.addEventListener('DOMContentLoaded', loadPendingKYC);
+
+        async function loadPendingKYC() {
+            try {
+                const response = await fetch('/api/admin/kyc/pending', {
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-User-ID': '{{ current_user.id }}'
+                    }
+                });
+
+                const data = await response.json();
+
+                if (data.success && data.pending_kycs) {
+                    displayKYCSubmissions(data.pending_kycs);
+                    document.getElementById('pendingCount').textContent = data.count;
+                } else {
+                    displayEmptyState();
+                }
+            } catch (error) {
+                console.error('Error loading KYC:', error);
+                displayErrorState();
+            }
+        }
+
+        function displayKYCSubmissions(kycs) {
+            const grid = document.getElementById('kycGrid');
+            grid.innerHTML = '';
+
+            if (kycs.length === 0) {
+                displayEmptyState();
+                return;
+            }
+
+            kycs.forEach(kyc => {
+                window.kycPhotos[kyc.id] = kyc.photos || [];
+                currentPhotoIndex[kyc.id] = 0;
+
+                const photosHtml = `
+                    <div class="kyc-photo-gallery">
+                        <button class="photo-arrow left" onclick="prevPhoto(${kyc.id})">&#9664;</button>
+                        <img
+                            src="${kyc.photos && kyc.photos.length > 0 ? kyc.photos[0] : ''}"
+                            alt="Photo 1"
+                            class="photo-current"
+                            id="photo-current-${kyc.id}"
+                            onclick="openPhotoModal(${kyc.id})"
+                        />
+                        <button class="photo-arrow right" onclick="nextPhoto(${kyc.id})">&#9654;</button>
+                    </div>
+                `;
+
+                const card = document.createElement('div');
+                card.className = 'kyc-card';
+                card.innerHTML = `
+                    <div class="kyc-header">
+                        <div>
+                            <strong>${kyc.full_name}</strong>
+                            <div style="color: var(--text-secondary); font-size: 14px;">ID: ${kyc.id}</div>
+                        </div>
+                        <span class="kyc-status ${kyc.status}">${kyc.status.toUpperCase()}</span>
+                    </div>
+
+                    ${photosHtml}
+
+                    <div class="kyc-info-row">
+                        <span style="color: var(--text-secondary);">Country:</span>
+                        <strong>${kyc.country}</strong>
+                    </div>
+
+                    <div class="kyc-info-row">
+                        <span style="color: var(--text-secondary);">Date of birth:</span>
+                        <strong>${kyc.date_of_birth}</strong>
+                    </div>
+
+                    <div class="kyc-info-row">
+                        <span style="color: var(--text-secondary);">Address:</span>
+                        <strong>${kyc.address}</strong>
+                    </div>
+
+                    <div class="kyc-info-row">
+                        <span style="color: var(--text-secondary);">Phone:</span>
+                        <strong>${kyc.phone}</strong>
+                    </div>
+
+                    <div class="kyc-info-row">
+                        <span style="color: var(--text-secondary);">ID Type:</span>
+                        <strong>${kyc.id_type || 'N/A'}</strong>
+                    </div>
+
+                    <div class="kyc-info-row">
+                        <span style="color: var(--text-secondary);">ID Number:</span>
+                        <strong>${kyc.id_number || 'N/A'}</strong>
+                    </div>
+
+                    <div class="kyc-info-row">
+                        <span style="color: var(--text-secondary);">Submitted:</span>
+                        <strong>${new Date(kyc.submitted_at).toLocaleDateString()}</strong>
+                    </div>
+
+                    <div class="kyc-actions">
+                        <button class="btn btn-approve" onclick="approveKYC(${kyc.id})">
+                            <i class="fas fa-check"></i> Approve
+                        </button>
+                        <button class="btn btn-reject" onclick="openRejectModal(${kyc.id})">
+                            <i class="fas fa-times"></i> Reject
+                        </button>
+                    </div>
+                `;
+                grid.appendChild(card);
+            });
+        }
+
+        function displayEmptyState() {
+            const grid = document.getElementById('kycGrid');
+            grid.innerHTML = `
+                <div style="text-align: center; padding: 40px; grid-column: 1 / -1; color: var(--text-secondary);">
+                    <i class="fas fa-check-circle" style="font-size: 48px; margin-bottom: 20px; color: var(--success-color);"></i>
+                    <p>No pending KYC submissions</p>
+                </div>
+            `;
+        }
+
+        function displayErrorState() {
+            const grid = document.getElementById('kycGrid');
+            grid.innerHTML = `
+                <div style="text-align: center; padding: 40px; grid-column: 1 / -1; color: var(--danger-color);">
+                    <i class="fas fa-exclamation-triangle" style="font-size: 48px; margin-bottom: 20px;"></i>
+                    <p>Error loading KYC submissions</p>
+                </div>
+            `;
+        }
+
+        async function approveKYC(kycId) {
+            if (!confirm('Approve this KYC submission?')) return;
+
+            try {
+                const response = await fetch('/api/admin/kyc/review', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-User-ID': '{{ current_user.id }}'
+                    },
+                    body: JSON.stringify({
+                        kyc_id: kycId,
+                        action: 'approve'
+                    })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    alert('KYC approved successfully!');
+                    loadPendingKYC();
+                } else {
+                    alert(`Error: ${data.error}`);
+                }
+            } catch (error) {
+                console.error('Error approving KYC:', error);
+                alert('Error approving KYC');
+            }
+        }
+
+        function openRejectModal(kycId) {
+            currentKYCId = kycId;
+            document.getElementById('rejectModal').classList.add('show');
+            document.getElementById('rejectionReason').value = '';
+        }
+
+        function closeRejectModal() {
+            currentKYCId = null;
+            document.getElementById('rejectModal').classList.remove('show');
+        }
+
+        async function confirmReject() {
+            const reason = document.getElementById('rejectionReason').value.trim();
+
+            if (!reason) {
+                alert('Please enter a rejection reason');
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/admin/kyc/review', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-User-ID': '{{ current_user.id }}'
+                    },
+                    body: JSON.stringify({
+                        kyc_id: currentKYCId,
+                        action: 'reject',
+                        rejection_reason: reason
+                    })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    alert('KYC rejected');
+                    closeRejectModal();
+                    loadPendingKYC();
+                } else {
+                    alert(`Error: ${data.error}`);
+                }
+            } catch (error) {
+                console.error('Error rejecting KYC:', error);
+                alert('Error rejecting KYC');
+            }
+        }
+
+        function prevPhoto(kycId) {
+            const photos = window.kycPhotos[kycId];
+            if (!photos || photos.length === 0) return;
+            let index = currentPhotoIndex[kycId] || 0;
+            index = (index - 1 + photos.length) % photos.length;
+            updatePhoto(kycId, index);
+        }
+
+        function nextPhoto(kycId) {
+            const photos = window.kycPhotos[kycId];
+            if (!photos || photos.length === 0) return;
+            let index = currentPhotoIndex[kycId] || 0;
+            index = (index + 1) % photos.length;
+            updatePhoto(kycId, index);
+        }
+
+        function updatePhoto(kycId, index) {
+            currentPhotoIndex[kycId] = index;
+            const img = document.getElementById(`photo-current-${kycId}`);
+            img.src = window.kycPhotos[kycId][index];
+        }
+
+        function openPhotoModal(kycId) {
+            const modal = document.getElementById('photoModal');
+            const modalImg = document.getElementById('photoModalImg');
+            const index = currentPhotoIndex[kycId] || 0;
+            modalImg.src = window.kycPhotos[kycId][index];
+            modal.classList.add('show');
+        }
+
+        function closePhotoModal() {
+            document.getElementById('photoModal').classList.remove('show');
+        }
+    </script>
+</body>
+</html>
+{% endblock %}

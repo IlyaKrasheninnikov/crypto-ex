@@ -1,0 +1,502 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Profile Settings</title>
+    <link rel="stylesheet" href="https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+    <style>
+        :root {
+            --primary-color: #2563eb;
+            --success-color: #10b981;
+            --danger-color: #ef4444;
+            --background-color: #1e293b;
+            --card-background: #f8fafc;
+            --text-primary: #1e293b;
+            --text-secondary: #64748b;
+            --border-color: #e2e8f0;
+        }
+
+        .dark-mode {
+            --background-color: #354867;
+            --card-background: #1e293b;
+            --text-primary: #f1f5f9;
+            --text-secondary: #94a3b8;
+            --border-color: #334155;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--background-color);
+            color: var(--text-primary);
+            margin: 0;
+            padding: 20px;
+            transition: all 0.3s ease;
+        }
+
+        h2 {
+            font-size: 1.5rem;
+            margin-bottom: 24px;
+            padding-bottom: 12px;
+            border-bottom: 2px solid var(--border-color);
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .card {
+            background-color: var(--card-background);
+            border-radius: 16px;
+            padding: 24px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            margin-bottom: 32px; /* Increased margin between cards */
+        }
+
+        .flatpickr-calendar {
+            background: var(--card-background);
+            border-radius: 8px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+
+        .flatpickr-day {
+            border-radius: 6px;
+        }
+
+        .flatpickr-day.selected {
+            background: var(--primary-color);
+            border-color: var(--primary-color);
+        }
+
+
+        .grid {
+            display: grid;
+            gap: 32px; /* Adjusted spacing between sections */
+        }
+
+        @media (min-width: 768px) {
+            .grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        .form-control {
+            margin-bottom: 24px; /* Increased margin between form controls */
+        }
+
+        .form-label {
+            display: block;
+            font-size: 0.875rem;
+            font-weight: 500;
+            margin-bottom: 8px;
+            color: var(--text-primary);
+        }
+
+        .form-input {
+            width: 100%;
+            padding: 10px 16px;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            background-color: #1a2434;
+            color: var(--text-primary);
+            transition: all 0.3s ease;
+        }
+
+        .form-input:focus {
+            border-color: var(--primary-color);
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+        }
+
+        .file-upload {
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 32px;
+            border: 2px dashed var(--border-color);
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .file-upload:hover {
+            border-color: var(--primary-color);
+        }
+
+        .file-upload input[type="file"] {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            opacity: 0;
+            cursor: pointer;
+        }
+
+        .file-upload i {
+            font-size: 48px;
+            color: var(--primary-color);
+            margin-bottom: 16px;
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 12px 24px;
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .btn:hover {
+            opacity: 0.9;
+        }
+
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 16px;
+            border-radius: 9999px;
+            font-size: 1rem;
+            font-weight: 500;
+        }
+
+
+        .status-badge.verified {
+            background-color: var(--success-color);
+            color: white;
+        }
+
+        .status-badge.unverified {
+            background-color: var(--danger-color);
+            color: white;
+        }
+
+        .acc-inf {
+            font-weight:bold;
+            font-size: 25px;
+        }
+
+    </style>
+</head>
+<body>
+    {% extends "base.html" %}
+
+    {% block content %}
+    <div class="container">
+        <h1>⚙️ Profile Settings</h1>
+
+        <div class="grid">
+            <!-- Profile Information Card -->
+            <div class="card">
+                <h2>Account Information</h2>
+                <div class="form-control">
+                    <label class="form-label acc-inf">Email</label>
+                    <p>{{ current_user.email }}</p>
+                </div>
+                <div class="form-control">
+                    <label class="form-label acc-inf">Account Status</label>
+                    {% if current_user.is_verified %}
+                    <span class="status-badge verified">
+                        <i class='bx bx-check-circle'></i>
+                        Verified
+                    </span>
+                    {% else %}
+                    <span class="status-badge unverified">
+                        <i class='bx bx-x-circle'></i>
+                        Unverified
+                    </span>
+                    {% endif %}
+                </div>
+                <div class="form-control">
+                    <label class="form-label acc-inf">Member Since</label>
+                    <p>{{ current_user.created_at.strftime('%B %d, %Y') }}</p>
+                </div>
+            </div>
+
+            <!-- Change Password Card -->
+            <div class="card">
+                <h2>Change Password</h2>
+                <form method="POST" action="{{ url_for('change_password') }}" id="changePasswordForm">
+                    <div class="form-control">
+                        <label class="form-label" for="current_password">Current Password</label>
+                        <input type="password" id="current_password" name="current_password" required class="form-input">
+                    </div>
+                    <div class="form-control">
+                        <label class="form-label" for="new_password">New Password</label>
+                        <input type="password" id="new_password" name="new_password" required class="form-input">
+                    </div>
+                    <div class="form-control">
+                        <label class="form-label" for="confirm_password">Confirm New Password</label>
+                        <input type="password" id="confirm_password" name="confirm_password" required class="form-input">
+                    </div>
+                    <button type="submit" class="btn">Update Password</button>
+                </form>
+            </div>
+
+            <!-- KYC Verification Card -->
+            <!-- KYC Verification Card -->
+            <div class="card" style="grid-column: span 2;">
+                <h2>KYC Verification</h2>
+
+                {% if current_user.kyc_status == 'approved' %}
+                    <div class="success-message">
+                        <p style="font-size: 25px;">✅ Your account is verified! You have full access to all features.</p>
+                    </div>
+                {% elif current_user.kyc_status == 'pending' %}
+                    <div class="warning-message">
+                        <p style="font-size: 20px; color: #f59e0b;">⏳ Your KYC is under review. We'll notify you once it's processed.</p>
+                    </div>
+                {% elif current_user.kyc_status == 'rejected' %}
+                    <div class="error-message">
+                        <p style="font-size: 20px; color: #ef4444;">❌ Your KYC was rejected. Please resubmit with correct documents.</p>
+                    </div>
+                {% endif %}
+
+                {% if current_user.kyc_status not in ['approved', 'pending'] %}
+                <form id="kycForm" method="POST" enctype="multipart/form-data" action="/api/kyc/submit">
+                    <div class="grid">
+                        <div class="form-control">
+                            <label class="form-label" for="fullname">Full Name</label>
+                            <input type="text" id="fullname" name="fullname" required class="form-input">
+                        </div>
+
+                        <div class="form-control">
+                            <label class="form-label" for="dateofbirth">Date of Birth</label>
+                            <input type="date" id="dateofbirth" name="dateofbirth" required class="form-input">
+
+                        </div>
+                    </div>
+
+                    <div class="form-control">
+                        <label class="form-label" for="country">Country of Residence</label>
+                        <select id="country" name="country" required class="form-input">
+                            <option value="">Select a country</option>
+                        </select>
+                    </div>
+
+                    <div class="form-control">
+                        <label class="form-label" for="address">Address</label>
+                        <input type="text" id="address" name="address" class="form-input">
+                    </div>
+
+                    <div class="form-control">
+                        <label class="form-label" for="phone">Phone Number</label>
+                        <input type="tel" id="phone" name="phone" class="form-input">
+                    </div>
+
+                    <div class="form-control">
+                        <label class="form-label" for="idtype">ID Document Type</label>
+                        <select id="idtype" name="idtype" required class="form-input">
+                            <option value="">Select ID type</option>
+                            <option value="passport">Passport</option>
+                            <option value="drivinglicense">Driving License</option>
+                            <option value="nationalid">National ID</option>
+                        </select>
+                    </div>
+
+                    <div class="form-control">
+                        <label class="form-label" for="idnumber">ID Number</label>
+                        <input type="text" id="idnumber" name="idnumber" class="form-input">
+                    </div>
+
+                    <div class="grid">
+                        <div class="form-control">
+                            <label class="form-label">ID Document Front *</label>
+                            <div class="file-upload" data-field="id_front">
+                                <i class='bx bx-upload'></i>
+                                <span>Click or drag to upload</span>
+                                <input type="file" id="id_front" name="id_front" accept="image/*,.pdf" required>
+                            </div>
+                        </div>
+
+                        <div class="form-control">
+                            <label class="form-label">ID Document Back *</label>
+                            <div class="file-upload" data-field="id_back">
+                                <i class='bx bx-upload'></i>
+                                <span>Click or drag to upload</span>
+                                <input type="file" id="id_back" name="id_back" accept="image/*,.pdf" required>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-control">
+                        <label class="form-label">Selfie with ID *</label>
+                        <div class="file-upload" data-field="selfie">
+                            <i class='bx bx-camera'></i>
+                            <span>Click or drag to upload</span>
+                            <input type="file" id="selfie" name="selfie" accept="image/*" required>
+                        </div>
+                    </div>
+
+                    <div class="form-control">
+                        <label class="form-label">Proof of Address</label>
+                        <div class="file-upload" data-field="proof_of_address">
+                            <i class='bx bx-upload'></i>
+                            <span>Click or drag to upload</span>
+                            <input type="file" id="proof_of_address" name="proof_of_address" accept="image/*,.pdf">
+                        </div>
+                    </div>
+
+                    <button type="submit" class="btn" id="submitKycBtn">Submit KYC Documents</button>
+                </form>
+                {% endif %}
+            </div>
+
+        </div>
+    </div>
+        <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+        <script>
+        flatpickr("#dateofbirth", {
+            dateFormat: "d-m-Y",
+            maxDate: new Date().fp_incr(-18 * 365), // минимум 18 лет (примерно)
+            locale: {
+              firstDayOfWeek: 1
+            }
+          });
+
+        const dateInput = document.getElementById('dateofbirth');
+        if (dateInput) {
+            const today = new Date();
+            const maxDate = new Date();
+            maxDate.setFullYear(today.getFullYear() - 18);
+            dateInput.max = maxDate.toISOString().split('T')[0];
+        }
+        // Initialize countries dropdown
+        const countries = [{code:'AF',name:'Afghanistan'},{code:'AL',name:'Albania'},{code:'DZ',name:'Algeria'},{code:'AS',name:'American Samoa'},{code:'AD',name:'Andorra'},{code:'AO',name:'Angola'},{code:'AI',name:'Anguilla'},{code:'AQ',name:'Antarctica'},{code:'AG',name:'Antigua and Barbuda'},{code:'AR',name:'Argentina'},{code:'AM',name:'Armenia'},{code:'AW',name:'Aruba'},{code:'AU',name:'Australia'},{code:'AT',name:'Austria'},{code:'AZ',name:'Azerbaijan'},{code:'BS',name:'Bahamas'},{code:'BH',name:'Bahrain'},{code:'BD',name:'Bangladesh'},{code:'BB',name:'Barbados'},{code:'BY',name:'Belarus'},{code:'BE',name:'Belgium'},{code:'BZ',name:'Belize'},{code:'BJ',name:'Benin'},{code:'BM',name:'Bermuda'},{code:'BT',name:'Bhutan'},{code:'BO',name:'Bolivia'},{code:'BQ',name:'Bonaire, Sint Eustatius and Saba'},{code:'BA',name:'Bosnia and Herzegovina'},{code:'BW',name:'Botswana'},{code:'BV',name:'Bouvet Island'},{code:'BR',name:'Brazil'},{code:'IO',name:'British Indian Ocean Territory'},{code:'BN',name:'Brunei Darussalam'},{code:'BG',name:'Bulgaria'},{code:'BF',name:'Burkina Faso'},{code:'BI',name:'Burundi'},{code:'CV',name:'Cabo Verde'},{code:'KH',name:'Cambodia'},{code:'CM',name:'Cameroon'},{code:'CA',name:'Canada'},{code:'KY',name:'Cayman Islands'},{code:'CF',name:'Central African Republic'},{code:'TD',name:'Chad'},{code:'CL',name:'Chile'},{code:'CN',name:'China'},{code:'CX',name:'Christmas Island'},{code:'CC',name:'Cocos (Keeling) Islands'},{code:'CO',name:'Colombia'},{code:'KM',name:'Comoros'},{code:'CG',name:'Congo'},{code:'CD',name:'Congo (Democratic Republic of the)'},{code:'CK',name:'Cook Islands'},{code:'CR',name:'Costa Rica'},{code:'CI',name:"Côte d'Ivoire"},{code:'HR',name:'Croatia'},{code:'CU',name:'Cuba'},{code:'CW',name:'Curaçao'},{code:'CY',name:'Cyprus'},{code:'CZ',name:'Czechia'},{code:'DK',name:'Denmark'},{code:'DJ',name:'Djibouti'},{code:'DM',name:'Dominica'},{code:'DO',name:'Dominican Republic'},{code:'EC',name:'Ecuador'},{code:'EG',name:'Egypt'},{code:'SV',name:'El Salvador'},{code:'GQ',name:'Equatorial Guinea'},{code:'ER',name:'Eritrea'},{code:'EE',name:'Estonia'},{code:'SZ',name:'Eswatini'},{code:'ET',name:'Ethiopia'},{code:'FK',name:'Falkland Islands (Malvinas)'},{code:'FO',name:'Faroe Islands'},{code:'FJ',name:'Fiji'},{code:'FI',name:'Finland'},{code:'FR',name:'France'},{code:'GF',name:'French Guiana'},{code:'PF',name:'French Polynesia'},{code:'TF',name:'French Southern Territories'},{code:'GA',name:'Gabon'},{code:'GM',name:'Gambia'},{code:'GE',name:'Georgia'},{code:'DE',name:'Germany'},{code:'GH',name:'Ghana'},{code:'GI',name:'Gibraltar'},{code:'GR',name:'Greece'},{code:'GL',name:'Greenland'},{code:'GD',name:'Grenada'},{code:'GP',name:'Guadeloupe'},{code:'GU',name:'Guam'},{code:'GT',name:'Guatemala'},{code:'GG',name:'Guernsey'},{code:'GN',name:'Guinea'},{code:'GW',name:'Guinea-Bissau'},{code:'GY',name:'Guyana'},{code:'HT',name:'Haiti'},{code:'HM',name:'Heard Island and McDonald Islands'},{code:'VA',name:'Holy See'},{code:'HN',name:'Honduras'},{code:'HK',name:'Hong Kong'},{code:'HU',name:'Hungary'},{code:'IS',name:'Iceland'},{code:'IN',name:'India'},{code:'ID',name:'Indonesia'},{code:'IR',name:'Iran'},{code:'IQ',name:'Iraq'},{code:'IE',name:'Ireland'},{code:'IM',name:'Isle of Man'},{code:'IL',name:'Israel'},{code:'IT',name:'Italy'},{code:'JM',name:'Jamaica'},{code:'JP',name:'Japan'},{code:'JE',name:'Jersey'},{code:'JO',name:'Jordan'},{code:'KZ',name:'Kazakhstan'},{code:'KE',name:'Kenya'},{code:'KI',name:'Kiribati'},{code:'KP',name:'Korea (North)'},{code:'KR',name:'Korea (South)'},{code:'KW',name:'Kuwait'},{code:'KG',name:'Kyrgyzstan'},{code:'LA',name:"Lao People's Democratic Republic"},{code:'LV',name:'Latvia'},{code:'LB',name:'Lebanon'},{code:'LS',name:'Lesotho'},{code:'LR',name:'Liberia'},{code:'LY',name:'Libya'},{code:'LI',name:'Liechtenstein'},{code:'LT',name:'Lithuania'},{code:'LU',name:'Luxembourg'},{code:'MO',name:'Macao'},{code:'MG',name:'Madagascar'},{code:'MW',name:'Malawi'},{code:'MY',name:'Malaysia'},{code:'MV',name:'Maldives'},{code:'ML',name:'Mali'},{code:'MT',name:'Malta'},{code:'MH',name:'Marshall Islands'},{code:'MQ',name:'Martinique'},{code:'MR',name:'Mauritania'},{code:'MU',name:'Mauritius'},{code:'YT',name:'Mayotte'},{code:'MX',name:'Mexico'},{code:'FM',name:'Micronesia'},{code:'MD',name:'Moldova'},{code:'MC',name:'Monaco'},{code:'MN',name:'Mongolia'},{code:'ME',name:'Montenegro'},{code:'MS',name:'Montserrat'},{code:'MA',name:'Morocco'},{code:'MZ',name:'Mozambique'},{code:'MM',name:'Myanmar'},{code:'NA',name:'Namibia'},{code:'NR',name:'Nauru'},{code:'NP',name:'Nepal'},{code:'NL',name:'Netherlands'},{code:'NC',name:'New Caledonia'},{code:'NZ',name:'New Zealand'},{code:'NI',name:'Nicaragua'},{code:'NE',name:'Niger'},{code:'NG',name:'Nigeria'},{code:'NU',name:'Niue'},{code:'NF',name:'Norfolk Island'},{code:'MK',name:'North Macedonia'},{code:'MP',name:'Northern Mariana Islands'},{code:'NO',name:'Norway'},{code:'OM',name:'Oman'},{code:'PK',name:'Pakistan'},{code:'PW',name:'Palau'},{code:'PS',name:'Palestine'},{code:'PA',name:'Panama'},{code:'PG',name:'Papua New Guinea'},{code:'PY',name:'Paraguay'},{code:'PE',name:'Peru'},{code:'PH',name:'Philippines'},{code:'PN',name:'Pitcairn'},{code:'PL',name:'Poland'},{code:'PT',name:'Portugal'},{code:'PR',name:'Puerto Rico'},{code:'QA',name:'Qatar'},{code:'RE',name:'Réunion'},{code:'RO',name:'Romania'},{code:'RU',name:'Russian Federation'},{code:'RW',name:'Rwanda'},{code:'BL',name:'Saint Barthélemy'},{code:'SH',name:'Saint Helena, Ascension and Tristan da Cunha'},{code:'KN',name:'Saint Kitts and Nevis'},{code:'LC',name:'Saint Lucia'},{code:'MF',name:'Saint Martin (French part)'},{code:'PM',name:'Saint Pierre and Miquelon'},{code:'VC',name:'Saint Vincent and the Grenadines'},{code:'WS',name:'Samoa'},{code:'SM',name:'San Marino'},{code:'ST',name:'Sao Tome and Principe'},{code:'SA',name:'Saudi Arabia'},{code:'SN',name:'Senegal'},{code:'RS',name:'Serbia'},{code:'SC',name:'Seychelles'},{code:'SL',name:'Sierra Leone'},{code:'SG',name:'Singapore'},{code:'SX',name:'Sint Maarten (Dutch part)'},{code:'SK',name:'Slovakia'},{code:'SI',name:'Slovenia'},{code:'SB',name:'Solomon Islands'},{code:'SO',name:'Somalia'},{code:'ZA',name:'South Africa'},{code:'GS',name:'South Georgia and the South Sandwich Islands'},{code:'SS',name:'South Sudan'},{code:'ES',name:'Spain'},{code:'LK',name:'Sri Lanka'},{code:'SD',name:'Sudan'},{code:'SR',name:'Suriname'},{code:'SJ',name:'Svalbard and Jan Mayen'},{code:'SE',name:'Sweden'},{code:'CH',name:'Switzerland'},{code:'SY',name:'Syrian Arab Republic'},{code:'TW',name:'Taiwan'},{code:'TJ',name:'Tajikistan'},{code:'TZ',name:'Tanzania'},{code:'TH',name:'Thailand'},{code:'TL',name:'Timor-Leste'},{code:'TG',name:'Togo'},{code:'TK',name:'Tokelau'},{code:'TO',name:'Tonga'},{code:'TT',name:'Trinidad and Tobago'},{code:'TN',name:'Tunisia'},{code:'TR',name:'Türkiye (Turkey)'},{code:'TM',name:'Turkmenistan'},{code:'TC',name:'Turks and Caicos Islands'},{code:'TV',name:'Tuvalu'},{code:'UG',name:'Uganda'},{code:'UA',name:'Ukraine'},{code:'AE',name:'United Arab Emirates'},{code:'GB',name:'United Kingdom of Great Britain and Northern Ireland'},{code:'US',name:'United States of America'},{code:'UM',name:'United States Minor Outlying Islands'},{code:'UY',name:'Uruguay'},{code:'UZ',name:'Uzbekistan'},{code:'VU',name:'Vanuatu'},{code:'VE',name:'Venezuela'},{code:'VN',name:'Viet Nam'},{code:'VG',name:'Virgin Islands (British)'},{code:'VI',name:'Virgin Islands (U.S.)'},{code:'WF',name:'Wallis and Futuna'},{code:'EH',name:'Western Sahara'},{code:'YE',name:'Yemen'},{code:'ZM',name:'Zambia'},{code:'ZW',name:'Zimbabwe' } ];
+
+        const countrySelect = document.getElementById('country');
+        countries.forEach(country => {
+            const option = new Option(country.name, country.code);
+            countrySelect.add(option);
+        });
+
+        // File upload preview
+        document.querySelectorAll('input[type="file"]').forEach(input => {
+            input.addEventListener('change', function(e) {
+                const file = e.target.files[0];
+                if (file) {
+                    const parent = this.closest('.file-upload');
+                    const span = parent.querySelector('span');
+                    span.textContent = file.name;
+                }
+            });
+        });
+    </script>
+    <script>
+    document.getElementById('changePasswordForm')?.addEventListener('submit', async function(e) {
+        e.preventDefault();
+
+        const formData = new FormData(this);
+        const data = {
+            current_password: formData.get('current_password'),
+            new_password: formData.get('new_password'),
+            confirm_password: formData.get('confirm_password')
+        };
+
+        // Validate passwords match
+        if (data.new_password !== data.confirm_password) {
+            alert('New passwords do not match!');
+            return;
+        }
+
+        try {
+            // Get user_id from session or JWT
+            const userId = sessionStorage.getItem('user_id') || localStorage.getItem('user_id');
+
+            const response = await fetch('/api/auth/change-password', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-User-ID': userId
+                },
+                body: JSON.stringify({
+                    current_password: data.current_password,
+                    new_password: data.new_password
+                })
+            });
+
+            const result = await response.json();
+
+            if (response.ok) {
+                alert('Password changed successfully!');
+                this.reset();
+            } else {
+                alert(result.error || 'Failed to change password');
+            }
+        } catch (error) {
+            console.error('Error:', error);
+            alert('An error occurred while changing password');
+        }
+    });
+    </script>
+    <script>
+    // KYC Form Submission
+    document.getElementById('kycForm')?.addEventListener('submit', async function(e) {
+        e.preventDefault();
+
+        const submitBtn = document.getElementById('submitKycBtn');
+        const originalText = submitBtn.textContent;
+        submitBtn.textContent = 'Submitting...';
+        submitBtn.disabled = true;
+
+        try {
+            const formData = new FormData(this);
+
+            // Get user ID from session/localStorage
+            const response = await fetch('/api/kyc/submit', {
+                method: 'POST',
+                headers: {
+                    'X-User-ID': '{{ current_user.id }}'
+                },
+                body: formData
+            });
+
+            const result = await response.json();
+
+            if (response.ok && result.success) {
+                alert('✅ KYC documents submitted successfully! Your submission is under review.');
+                window.location.reload();
+            } else {
+                alert('❌ ' + (result.error || 'Failed to submit KYC'));
+                submitBtn.textContent = originalText;
+                submitBtn.disabled = false;
+            }
+        } catch (error) {
+            console.error('Error:', error);
+            alert('❌ An error occurred while submitting KYC');
+            submitBtn.textContent = originalText;
+            submitBtn.disabled = false;
+        }
+    });
+
+    // File size validation (5MB max)
+    const MAX_SIZE = 10 * 1024 * 1024;
+    document.querySelectorAll('input[type="file"]').forEach(input => {
+        input.addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                if (file.size > MAX_SIZE) {
+                    alert(`File "${file.name}" is too large. Maximum size is 5MB.`);
+                    this.value = '';
+                    return;
+                }
+
+                const parent = this.closest('.file-upload');
+                const span = parent.querySelector('span');
+                span.textContent = file.name;
+                span.style.color = 'var(--success-color)';
+            }
+        });
+    });
+    </script>
+    {% endblock %}
+</body>
+</html>
