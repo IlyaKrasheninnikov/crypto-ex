@@ -2,7 +2,7 @@ import requests
 import json
 
 # API endpoint URL
-url = "http://127.0.0.1:5003/api/wallet/deposit"
+url = "http://62.217.176.12:5003/api/wallet/deposit"
 
 # Headers
 headers = {
@@ -46,4 +46,5 @@ except requests.exceptions.Timeout:
 except requests.exceptions.RequestException as e:
     print(f"Request Error: {e}")
 except json.JSONDecodeError:
+
     print("Error: Invalid JSON response from server")
